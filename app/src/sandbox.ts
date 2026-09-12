@@ -102,6 +102,8 @@ const PLANNED_STUB = {
  * numbers a particular run happened to compute. Only the tool's declared
  * `intentFields` participate, so a slippage bound re-derived from a fresher
  * quote does not turn an already-broadcast swap into a "new" one.
+ *
+ * This is only half of an intent's identity — see `occurrenceKey`.
  */
 export function intentHash(tool: ToolDef, args: any): string {
   const fields = tool.intentFields;
@@ -112,6 +114,22 @@ export function intentHash(tool: ToolDef, args: any): string {
     .update(JSON.stringify({ path: tool.path, material }))
     .digest("hex")
     .slice(0, 16);
+}
+
+/**
+ * Position of an intent among identical ones in the same program.
+ *
+ * A strategy legitimately repeats itself: mirroring three of a leader's trades
+ * at the same fixed size produces three swaps whose economic fields are
+ * byte-identical. Keyed on those fields alone they collapse into one, the plan
+ * shows a single transaction, and two of the three trades silently never
+ * happen. Counting occurrences in execution order separates them while staying
+ * stable across re-runs, because the program replays deterministically.
+ */
+function occurrenceKey(base: string, seen: Map<string, number>): string {
+  const n = seen.get(base) ?? 0;
+  seen.set(base, n + 1);
+  return n === 0 ? base : `${base}#${n}`;
 }
 
 function policyFor(tool: ToolDef): Policy {
@@ -136,6 +154,7 @@ async function runCode(code: string, options: RunOptions = {}) {
   const ledger = { ...(options.ledger ?? {}) };
   const planning = options.planning ?? false;
   const plan: PlannedIntent[] = [];
+  const occurrences = new Map<string, number>();
 
   const toolInvoker = {
     invoke: ({ path, args }: { path: string; args: unknown }) =>
@@ -147,7 +166,10 @@ async function runCode(code: string, options: RunOptions = {}) {
             throw new Error(`tool_not_found: ${path}. Available: ${known}`);
           }
 
-          const hash = intentHash(tool, args);
+          const hash =
+            tool.sideEffect === "chain"
+              ? occurrenceKey(intentHash(tool, args), occurrences)
+              : intentHash(tool, args);
 
           // Idempotency: a transaction that already landed is never sent twice,
           // no matter how often the surrounding code re-runs.

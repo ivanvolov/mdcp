@@ -1,3 +1,0 @@
-{"seq":0,"ts":1789235186536,"server":"baseline","mcpTool":"state.read","argsBytes":20,"resultBytes":4,"durationMs":1,"ok":true,"boundary":true}
-{"seq":0,"ts":1789235193943,"server":"baseline","mcpTool":"chain.block","argsBytes":2,"resultBytes":83,"durationMs":37,"ok":true,"boundary":true}
-{"seq":0,"ts":1789235201364,"server":"baseline","mcpTool":"wallet.swapHistory","argsBytes":69,"resultBytes":10838,"durationMs":578,"ok":true,"boundary":true}
