@@ -40,6 +40,10 @@ export const walletClient = createWalletClient({
 export const ADDRESSES = {
   WETH: getAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
   USDC: getAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
+  WBTC: getAddress("0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"),
+  DAI: getAddress("0x6B175474E89094C44Da98b954EedeAC495271d0F"),
+  LINK: getAddress("0x514910771AF9Ca656af840dff83E8264EcF986CA"),
+  UNI: getAddress("0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"),
   QUOTER_V2: getAddress("0x61fFE014bA17989E743c5F6cB21bF9697530B21e"),
   SWAP_ROUTER_02: getAddress("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"),
 } as const;
@@ -48,6 +52,10 @@ export const ADDRESSES = {
 export const TOKENS: Record<string, Address> = {
   WETH: ADDRESSES.WETH,
   USDC: ADDRESSES.USDC,
+  WBTC: ADDRESSES.WBTC,
+  DAI: ADDRESSES.DAI,
+  LINK: ADDRESSES.LINK,
+  UNI: ADDRESSES.UNI,
 };
 
 export function resolveToken(symbolOrAddress: string): Address {

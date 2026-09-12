@@ -32,8 +32,8 @@ export type Policy = "auto" | "approve";
 export interface PendingExecution {
   id: string;
   code: string;
-  /** The call that tripped the gate. */
-  awaiting: { path: string; args: unknown; intentHash: string };
+  /** Every chain write the program intends to make, collected in one pass. */
+  plan: PlannedIntent[];
   pausedAt: number;
   /** Intents already broadcast — replayed from the ledger instead of re-sent. */
   ledger: Record<string, unknown>;
@@ -78,16 +78,24 @@ function dropPending(id: string) {
   if (fs.existsSync(file)) fs.unlinkSync(file);
 }
 
-/** Signal used to unwind the sandbox when a write needs human approval. */
-class ApprovalRequired extends Error {
-  constructor(
-    readonly path: string,
-    readonly args: unknown,
-    readonly intentHash: string,
-  ) {
-    super("approval_required");
-  }
+export interface PlannedIntent {
+  tool: string;
+  args: unknown;
+  intentHash: string;
 }
+
+/**
+ * Result handed back for a chain write during the planning pass.
+ *
+ * Optimistic on purpose: the program must keep running so we can discover every
+ * intent it would make, not just the first one. Nothing is broadcast.
+ */
+const PLANNED_STUB = {
+  txHash: `0x${"0".repeat(64)}`,
+  status: "success",
+  gasUsed: "0",
+  planned: true,
+} as const;
 
 /**
  * A transaction intent is identified by what it would *do*, not by the exact
@@ -115,12 +123,19 @@ interface RunOptions {
   approved?: Set<string>;
   /** Results of intents already executed, replayed instead of re-broadcast. */
   ledger?: Record<string, unknown>;
+  /**
+   * Planning pass: collect every chain write the program would make and return
+   * stubs instead of broadcasting, so the operator reviews the whole strategy
+   * and signs once rather than once per transaction.
+   */
+  planning?: boolean;
 }
 
 async function runCode(code: string, options: RunOptions = {}) {
   const approved = options.approved ?? new Set<string>();
   const ledger = { ...(options.ledger ?? {}) };
-  let tripped: ApprovalRequired | null = null;
+  const planning = options.planning ?? false;
+  const plan: PlannedIntent[] = [];
 
   const toolInvoker = {
     invoke: ({ path, args }: { path: string; args: unknown }) =>
@@ -140,9 +155,22 @@ async function runCode(code: string, options: RunOptions = {}) {
             return { ...(ledger[hash] as object), replayed: true };
           }
 
+          // A planning pass must leave nothing behind. Local writes are not
+          // gated by policy, but executing one during planning would let the
+          // strategy observe its own dry run on the real pass — which is how a
+          // DCA convinces itself it already bought today and skips.
+          if (planning && tool.sideEffect === "local") {
+            return { ...(PLANNED_STUB as object), written: true };
+          }
+
           if (policyFor(tool) === "approve" && !approved.has(hash)) {
-            tripped = new ApprovalRequired(path, args, hash);
-            throw tripped;
+            if (!planning) {
+              throw new Error(`not_approved: ${path} (${hash})`);
+            }
+            if (!plan.some((p) => p.intentHash === hash)) {
+              plan.push({ tool: path, args, intentHash: hash });
+            }
+            return PLANNED_STUB;
           }
 
           const started = Date.now();
@@ -166,7 +194,7 @@ async function runCode(code: string, options: RunOptions = {}) {
   const result: ExecuteResult = await Effect.runPromise(
     executor.execute(code, toolInvoker),
   );
-  return { result, tripped: tripped as ApprovalRequired | null, ledger };
+  return { result, plan, ledger };
 }
 
 export interface ExecuteOutcome {
@@ -176,46 +204,35 @@ export interface ExecuteOutcome {
   error?: string;
   approval?: {
     executionId: string;
-    tool: string;
-    args: unknown;
-    intentHash: string;
+    /** Every transaction the strategy wants to make, reviewed as one unit. */
+    plan: PlannedIntent[];
     reason: string;
   };
 }
 
 export async function execute(code: string): Promise<ExecuteOutcome> {
-  const { result, tripped, ledger } = await runCode(code);
-
-  if (tripped) {
-    const id = randomUUID().slice(0, 8);
-    savePending({
-      id,
-      code,
-      awaiting: {
-        path: tripped.path,
-        args: tripped.args,
-        intentHash: tripped.intentHash,
-      },
-      pausedAt: Date.now(),
-      ledger,
-      approved: new Set(),
-    });
-    return {
-      status: "awaiting_approval",
-      approval: {
-        executionId: id,
-        tool: tripped.path,
-        args: tripped.args,
-        intentHash: tripped.intentHash,
-        reason:
-          "This call changes chain state. Approve it with resume({ executionId, approve: true }).",
-      },
-    };
-  }
+  // First pass always plans: run the strategy to completion without
+  // broadcasting, so the operator sees every transaction at once.
+  const { result, plan, ledger } = await runCode(code, { planning: true });
 
   if (result.error) {
     return { status: "error", error: result.error, logs: result.logs };
   }
+
+  if (plan.length > 0) {
+    const id = randomUUID().slice(0, 8);
+    savePending({ id, code, plan, pausedAt: Date.now(), ledger, approved: new Set() });
+    return {
+      status: "awaiting_approval",
+      approval: {
+        executionId: id,
+        plan,
+        reason: `${plan.length} transaction(s) need approval. Review them, then call resume({ executionId, approve: true }) once to run the whole strategy.`,
+      },
+      result: result.result,
+    };
+  }
+
   return { status: "ok", result: result.result, logs: result.logs };
 }
 
@@ -232,34 +249,27 @@ export async function resume(
     return { status: "error", error: "rejected_by_operator" };
   }
 
-  // Re-run the same code with this intent approved. Writes that already landed
-  // replay from the ledger, so the re-run cannot double-spend; anything the
-  // chain moved under our feet is re-read live.
-  const approved = new Set(entry.approved).add(entry.awaiting.intentHash);
-  const { result, tripped, ledger } = await runCode(entry.code, {
+  // Re-run for real with every planned intent approved. Chain state is re-read
+  // live, so a quote that went stale while the operator was deciding is
+  // recomputed — but anything already broadcast replays from the ledger instead
+  // of being sent twice.
+  const approved = new Set(entry.plan.map((p) => p.intentHash));
+  const { result, plan, ledger } = await runCode(entry.code, {
     approved,
     ledger: entry.ledger,
   });
 
-  if (tripped) {
-    savePending({
-      ...entry,
-      awaiting: {
-        path: tripped.path,
-        args: tripped.args,
-        intentHash: tripped.intentHash,
-      },
-      ledger,
-      approved,
-    });
+  // A write the planning pass did not predict (the program took a different
+  // branch against fresher state) is never executed silently.
+  if (plan.length > 0) {
+    savePending({ ...entry, plan, ledger, approved });
     return {
       status: "awaiting_approval",
       approval: {
         executionId,
-        tool: tripped.path,
-        args: tripped.args,
-        intentHash: tripped.intentHash,
-        reason: "Another state-changing call needs approval.",
+        plan,
+        reason:
+          "Fresh chain state produced transaction(s) that were not in the approved plan.",
       },
     };
   }

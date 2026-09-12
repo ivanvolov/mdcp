@@ -1,9 +1,2 @@
-{"seq":0,"ts":1789230678019,"server":"baseline","mcpTool":"state.read","argsBytes":14,"resultBytes":4,"durationMs":1,"ok":true,"boundary":true}
-{"seq":0,"ts":1789230681392,"server":"baseline","mcpTool":"chain.block","argsBytes":2,"resultBytes":83,"durationMs":36,"ok":true,"boundary":true}
-{"seq":0,"ts":1789230689302,"server":"baseline","mcpTool":"wallet.balances","argsBytes":2,"resultBytes":148,"durationMs":45,"ok":true,"boundary":true}
-{"seq":0,"ts":1789230696634,"server":"baseline","mcpTool":"uniswap.quote","argsBytes":58,"resultBytes":198,"durationMs":33,"ok":true,"boundary":true}
-{"seq":0,"ts":1789230706452,"server":"baseline","mcpTool":"token.allowance","argsBytes":16,"resultBytes":125,"durationMs":45,"ok":true,"boundary":true}
-{"seq":0,"ts":1789230714002,"server":"baseline","mcpTool":"token.approve","argsBytes":36,"resultBytes":173,"durationMs":199,"ok":true,"boundary":true}
-{"seq":0,"ts":1789230720299,"server":"baseline","mcpTool":"uniswap.swap","argsBytes":97,"resultBytes":142,"durationMs":91,"ok":true,"boundary":true}
-{"seq":0,"ts":1789230727687,"server":"baseline","mcpTool":"wallet.balances","argsBytes":2,"resultBytes":148,"durationMs":37,"ok":true,"boundary":true}
-{"seq":0,"ts":1789230735504,"server":"baseline","mcpTool":"state.write","argsBytes":130,"resultBytes":16,"durationMs":0,"ok":true,"boundary":true}
+{"seq":0,"ts":1789231224917,"server":"baseline","mcpTool":"chain.block","argsBytes":2,"resultBytes":83,"durationMs":33,"ok":true,"boundary":true}
+{"seq":0,"ts":1789231232514,"server":"baseline","mcpTool":"state.read","argsBytes":16,"resultBytes":4,"durationMs":1,"ok":true,"boundary":true}
