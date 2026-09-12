@@ -90,6 +90,26 @@ export const TOOLS: ToolDef[] = [
     invoke: (a) => chain.quote(a),
   },
   {
+    path: "uniswap.poolState",
+    summary:
+      "Depth and price of one v3 pool (one pair, one fee tier). Compare tiers to pick a venue.",
+    signature:
+      "uniswap.poolState(a: { tokenA: string; tokenB: string; fee: number }): { exists: boolean; pool: string; liquidity: string; sqrtPriceX96?: string; tick?: number }",
+    schema: z.object({ tokenA: z.string(), tokenB: z.string(), fee: z.number() }),
+    sideEffect: "view",
+    invoke: (a) => chain.poolState(a),
+  },
+  {
+    path: "wallet.swapHistory",
+    summary:
+      "Swaps a wallet received recently, decoded from pool logs. Input for copy-trading a leader.",
+    signature:
+      "wallet.swapHistory(a: { address: string; blocks?: number }): { address: string; fromBlock: string; toBlock: string; swaps: { pool: string; fee: number; pair: string; blockNumber: string; txHash: string; amount0: string; amount1: string }[] }",
+    schema: z.object({ address: z.string(), blocks: z.number().optional() }),
+    sideEffect: "view",
+    invoke: (a) => chain.swapHistory(a),
+  },
+  {
     path: "token.allowance",
     summary: "ERC-20 allowance granted by the agent wallet to a spender (defaults to the router).",
     signature:

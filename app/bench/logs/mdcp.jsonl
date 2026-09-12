@@ -25,3 +25,4 @@
 {"seq":14,"ts":1789231281277,"server":"mdcp","mcpTool":"execute","innerTool":"uniswap.swap","argsBytes":109,"resultBytes":142,"durationMs":181,"ok":true}
 {"seq":15,"ts":1789231281279,"server":"mdcp","mcpTool":"execute","innerTool":"state.write","argsBytes":685,"resultBytes":16,"durationMs":1,"ok":true}
 {"seq":16,"ts":1789231281281,"server":"mdcp","mcpTool":"resume","argsBytes":41,"resultBytes":1274,"durationMs":594,"ok":true,"boundary":true}
+{"seq":0,"ts":1789234469832,"server":"baseline","mcpTool":"uniswap.poolState","argsBytes":44,"resultBytes":178,"durationMs":235,"ok":true,"boundary":true}

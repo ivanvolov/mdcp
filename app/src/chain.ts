@@ -44,6 +44,7 @@ export const ADDRESSES = {
   DAI: getAddress("0x6B175474E89094C44Da98b954EedeAC495271d0F"),
   LINK: getAddress("0x514910771AF9Ca656af840dff83E8264EcF986CA"),
   UNI: getAddress("0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"),
+  V3_FACTORY: getAddress("0x1F98431c8aD98523631AE4a59f267346ea31F984"),
   QUOTER_V2: getAddress("0x61fFE014bA17989E743c5F6cB21bF9697530B21e"),
   SWAP_ROUTER_02: getAddress("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"),
 } as const;
@@ -78,6 +79,16 @@ const ERC20_ABI = parseAbi([
 const QUOTER_V2_ABI = parseAbi([
   "struct QuoteExactInputSingleParams { address tokenIn; address tokenOut; uint256 amountIn; uint24 fee; uint160 sqrtPriceLimitX96; }",
   "function quoteExactInputSingle(QuoteExactInputSingleParams params) returns (uint256 amountOut, uint160 sqrtPriceX96After, uint32 initializedTicksCrossed, uint256 gasEstimate)",
+]);
+
+const V3_FACTORY_ABI = parseAbi([
+  "function getPool(address tokenA, address tokenB, uint24 fee) view returns (address)",
+]);
+
+const V3_POOL_ABI = parseAbi([
+  "function liquidity() view returns (uint128)",
+  "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked)",
+  "event Swap(address indexed sender, address indexed recipient, int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick)",
 ]);
 
 const SWAP_ROUTER_02_ABI = parseAbi([
@@ -220,6 +231,95 @@ export async function swap(params: {
     gasUsed: receipt.gasUsed.toString(),
     blockNumber: receipt.blockNumber.toString(),
   };
+}
+
+/**
+ * Pool depth for one pair at one fee tier.
+ *
+ * Deliberately one tier per call: choosing a venue means comparing tiers, and
+ * that comparison is exactly the kind of loop we want to see run somewhere
+ * other than the model's context window.
+ */
+export async function poolState(params: {
+  tokenA: string;
+  tokenB: string;
+  fee: number;
+}) {
+  const tokenA = resolveToken(params.tokenA);
+  const tokenB = resolveToken(params.tokenB);
+  const pool = await publicClient.readContract({
+    address: ADDRESSES.V3_FACTORY,
+    abi: V3_FACTORY_ABI,
+    functionName: "getPool",
+    args: [tokenA, tokenB, params.fee],
+  });
+
+  if (pool === "0x0000000000000000000000000000000000000000") {
+    return { exists: false, pool, fee: params.fee, liquidity: "0" };
+  }
+
+  const [liquidity, slot0] = await Promise.all([
+    publicClient.readContract({ address: pool, abi: V3_POOL_ABI, functionName: "liquidity" }),
+    publicClient.readContract({ address: pool, abi: V3_POOL_ABI, functionName: "slot0" }),
+  ]);
+
+  return {
+    exists: true,
+    pool,
+    fee: params.fee,
+    liquidity: (liquidity as bigint).toString(),
+    sqrtPriceX96: (slot0 as any)[0].toString(),
+    tick: Number((slot0 as any)[1]),
+  };
+}
+
+/**
+ * Swaps a wallet made recently, recovered from pool logs.
+ *
+ * This is the copy-trade input: a leader's activity arrives as a raw event list
+ * that has to be decoded, filtered and sized before any of it is actionable.
+ */
+export async function swapHistory(params: {
+  address: string;
+  blocks?: number;
+  pairs?: { tokenA: string; tokenB: string; fee: number }[];
+}) {
+  const who = getAddress(params.address);
+  const lookback = BigInt(params.blocks ?? 5_000);
+  const head = await publicClient.getBlockNumber();
+  const fromBlock = head > lookback ? head - lookback : 0n;
+
+  const pairs = params.pairs ?? [
+    { tokenA: "USDC", tokenB: "WETH", fee: 500 },
+    { tokenA: "USDC", tokenB: "WETH", fee: 3000 },
+    { tokenA: "WBTC", tokenB: "WETH", fee: 3000 },
+  ];
+
+  const swaps: unknown[] = [];
+  for (const pair of pairs) {
+    const info = await poolState(pair);
+    if (!info.exists) continue;
+    const logs = await publicClient.getLogs({
+      address: info.pool as Address,
+      event: V3_POOL_ABI[2] as any,
+      args: { recipient: who },
+      fromBlock,
+      toBlock: head,
+    });
+    for (const log of logs) {
+      const a = (log as any).args;
+      swaps.push({
+        pool: info.pool,
+        fee: pair.fee,
+        pair: `${pair.tokenA}/${pair.tokenB}`,
+        blockNumber: log.blockNumber?.toString(),
+        txHash: log.transactionHash,
+        amount0: a.amount0?.toString(),
+        amount1: a.amount1?.toString(),
+      });
+    }
+  }
+  return { address: who, fromBlock: fromBlock.toString(), toBlock: head.toString(), swaps };
 }
 
 export async function blockInfo() {
