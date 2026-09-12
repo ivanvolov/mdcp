@@ -3,17 +3,6 @@
 **DEADLINE: Sun Sep 13, 12:00 pm EDT (16:00 UTC). Hard. ~24h left.**
 Track: Classic (from scratch — all code written during the event; MIT libraries allowed).
 
-## Frozen idea (do not re-litigate)
-
-**mdcp = MCP for DeFi.** Priorities, in order:
-1. **Token usage + speed** — the headline. Whole strategy pipelines in one model
-   round-trip; measured benchmark vs vanilla per-tool MCP (tokens + round-trips + wall time).
-   Speed matters *because strategies are time-sensitive* (quotes go stale).
-2. **Security** — keys never in the sandbox, ABI-derived policy, idempotent tx
-   intents, staleness re-checks. The reason a generic gateway can't do DeFi.
-3. **Agentic vs human** — later. Pause/resume covers the human-approval case now;
-   autonomous session-key policies are a roadmap slide, not a build item.
-
 ## The pitch
 
 > executor.sh (YC S26) proved agents need code-mode gateways instead of raw MCP —
@@ -49,43 +38,24 @@ Measured demo: same Uniswap strategy setup, vanilla per-tool MCP vs us —
      unlimited approve → block.
 - **Chain layer:** viem + Sepolia (or Base Sepolia). Simulation via eth_call.
 
-## Partner prizes (pick 3 PARTNERS at submission)
+## Partner prizes (pick 3 at submission)
 
-**Rule (verified on the event Info page):** up to 3 Partner Prizes, but a partner
-with multiple tracks counts as ONE pick and you're eligible for ALL their tracks.
-So optimize per-partner, not per-track. We're Classic/From Scratch → Continuity-only
-tracks excluded. Picks (eligible pool **$18k across 5 tracks**):
-
-1. **The Graph ($10k eligible — 2 from-scratch tracks)**
-   - *Best AI Tooling (From Scratch), $5k*: "new or extended MCP servers, agent
-     SKILLs" — this is us verbatim. `tools.graph.*` feeds pool/token discovery
-     into the Uniswap pipeline.
-   - *Best Composable/Standardized Graph Products, $5k*: qualify by querying a
-     **standardized schema across 2+ protocols** (Messari standardized subgraphs —
-     e.g. one pools query shape over Uniswap + another DEX) or composing 2+ Graph
-     products. Design `tools.graph` around the standardized schema, not a bespoke query.
-   - ⚠️ **Hard qual: live data via Subgraph Studio API key. Mocked/static data
-     explicitly disqualifies.** Get the API key early (h10 at latest).
-2. **Uniswap Foundation ($3k eligible, up to 3×$1k)**: catalog = Uniswap v4/v3
-   (quote, swap, LP mint/burn). Core demo. ⚠️ **Extra quals: `FEEDBACK.md` in
-   repo + submit the Uniswap Developer Feedback Form
-   (https://developers.uniswap.org/hackathon-feedback) linking it; README must
-   point at the exact files/lines of the integration.**
-3. **Third slot: OPEN — decide late.** Build Graph + Uniswap first with a local
-   signer. Only after the core works, read the actual docs of a candidate
-   (Privy / Bazantic / other) and integrate if cheap and real. No pick based on
-   bounty text alone.
-
-Rejected for now: Privy (assumed fit, docs never read — rejected by IV), Arc
-(frontend+backend+diagram+USDC-on-Arc, money gated on mainnet deploy Sep 30),
-Hedera (wrong chain), 1inch (Aqua-only), Ledger (device stack).
+1. **Uniswap Foundation — Best Uniswap Stack Contribution ($3k, up to 3×$1k)**:
+   catalog = Uniswap v4/v3 + Uniswap API (quote, swap, LP mint/burn). Core demo.
+2. **The Graph — Best AI Tooling (From Scratch) ($5k)**: literally "tooling that
+   makes The Graph easier to use from AI environments like Claude". Our
+   `tools.graph.*` integration: subgraph discovery + querying from the sandbox
+   (pool/token discovery feeds the Uniswap pipeline). Check quals in PRIZES.md.
+3. **Privy — Best financial flow ($2.5k)**: Privy server wallets AS the host-side
+   key custody — the sandbox never sees keys, Privy signs on resume. Natural fit.
+   (Alternate: Bazantic "Agentify a new API" $1k if Privy integration stalls.)
 
 ## 24h schedule
 
 - **h0–2**: scaffold builds & runs; MCP server with 3 tools registers in Claude Code.
 - **h2–7**: sandbox + tools proxy + Uniswap catalog (quote/swap on Sepolia fork or
   testnet); search/describe with TS-type compression.
-- **h7–10**: pause/resume signing flow (local keystore signer) + policy defaults.
+- **h7–10**: pause/resume signing flow (Privy or local keystore) + policy defaults.
 - **h10–13**: The Graph integration (subgraph query tool) + end-to-end strategy demo
   (e.g. "LP into the best-fee ETH/USDC pool with ±2% range").
 - **h13–16**: benchmark harness: identical task via (a) vanilla one-tool-per-action
@@ -97,15 +67,7 @@ Hedera (wrong chain), 1inch (Aqua-only), Ledger (device stack).
 
 ## Submission checklist
 
-- [ ] Public repo, all code authored during event window ✓ (repo live: ivanvolov/mdcp)
-- [ ] Real commit history (no giant single commit) — commit as we go
-- [ ] AI-tool attribution section in README (which parts Claude-assisted) — required by rules
-- [ ] Video: 2–4 min, 720p+, human voice (NO AI voiceover, NO phone recording,
-      NO speed-up), shows the token-counter side-by-side
-- [ ] Partners selected: The Graph + Uniswap Foundation (+3rd only if actually
-      integrated) — each with integration explanation + feedback
-- [ ] Graph: live Subgraph Studio API key wired (no mocks), standardized-schema
-      query across ≥2 protocols for the composable track
-- [ ] Uniswap: FEEDBACK.md committed + Developer Feedback Form submitted with link;
-      README points to exact integration files/lines
-- [ ] Live demo link optional but judges love runnable things (`npx mdcp`)
+- [ ] Public repo, all code authored during event window
+- [ ] Video: 2–4 min, 720p+, human voice, shows the token-counter side-by-side
+- [ ] 3 partner prizes selected with integration explanations
+- [ ] Live demo link optional but judges love runnable things (`npx` one-liner?)
