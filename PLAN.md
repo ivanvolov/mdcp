@@ -66,29 +66,26 @@ tracks excluded. Picks (eligible pool **$18k across 5 tracks**):
      products. Design `tools.graph` around the standardized schema, not a bespoke query.
    - ⚠️ **Hard qual: live data via Subgraph Studio API key. Mocked/static data
      explicitly disqualifies.** Get the API key early (h10 at latest).
-2. **Privy ($5k eligible — BOTH tracks with one integration)**
-   - *Best B2B financial product, $2.5k*: quals list "policies, signers, key
-     quorums, intents" — our ABI-derived policy + pause/resume approval flow IS
-     this. Frame: business treasury running agent strategies under policy.
-   - *Best financial flow, $2.5k*: the swap/LP flow itself, complexity hidden.
-   - Quals: Privy wallet created/used as core custody; sandbox never sees keys;
-     Privy signs on resume. One integration, two write-ups.
-3. **Uniswap Foundation ($3k eligible, up to 3×$1k)**: catalog = Uniswap v4/v3
+2. **Uniswap Foundation ($3k eligible, up to 3×$1k)**: catalog = Uniswap v4/v3
    (quote, swap, LP mint/burn). Core demo. ⚠️ **Extra quals: `FEEDBACK.md` in
    repo + submit the Uniswap Developer Feedback Form
    (https://developers.uniswap.org/hackathon-feedback) linking it; README must
    point at the exact files/lines of the integration.**
+3. **Third slot: OPEN — decide late.** Build Graph + Uniswap first with a local
+   signer. Only after the core works, read the actual docs of a candidate
+   (Privy / Bazantic / other) and integrate if cheap and real. No pick based on
+   bounty text alone.
 
-Rejected: Arc ($7k but frontend+backend+diagram+USDC-on-Arc, most money gated on
-mainnet deploy by Sep 30 — scope risk), Hedera (wrong chain), 1inch (Aqua-only),
-Bazantic (low $/effort, needs their platform setup), Ledger (device stack).
+Rejected for now: Privy (assumed fit, docs never read — rejected by IV), Arc
+(frontend+backend+diagram+USDC-on-Arc, money gated on mainnet deploy Sep 30),
+Hedera (wrong chain), 1inch (Aqua-only), Ledger (device stack).
 
 ## 24h schedule
 
 - **h0–2**: scaffold builds & runs; MCP server with 3 tools registers in Claude Code.
 - **h2–7**: sandbox + tools proxy + Uniswap catalog (quote/swap on Sepolia fork or
   testnet); search/describe with TS-type compression.
-- **h7–10**: pause/resume signing flow (Privy or local keystore) + policy defaults.
+- **h7–10**: pause/resume signing flow (local keystore signer) + policy defaults.
 - **h10–13**: The Graph integration (subgraph query tool) + end-to-end strategy demo
   (e.g. "LP into the best-fee ETH/USDC pool with ±2% range").
 - **h13–16**: benchmark harness: identical task via (a) vanilla one-tool-per-action
@@ -105,11 +102,10 @@ Bazantic (low $/effort, needs their platform setup), Ledger (device stack).
 - [ ] AI-tool attribution section in README (which parts Claude-assisted) — required by rules
 - [ ] Video: 2–4 min, 720p+, human voice (NO AI voiceover, NO phone recording,
       NO speed-up), shows the token-counter side-by-side
-- [ ] 3 partners selected: The Graph, Privy, Uniswap Foundation — each with
-      integration explanation + feedback
+- [ ] Partners selected: The Graph + Uniswap Foundation (+3rd only if actually
+      integrated) — each with integration explanation + feedback
 - [ ] Graph: live Subgraph Studio API key wired (no mocks), standardized-schema
       query across ≥2 protocols for the composable track
-- [ ] Privy: wallet created via Privy, policy/intent flow demonstrated (covers both tracks)
 - [ ] Uniswap: FEEDBACK.md committed + Developer Feedback Form submitted with link;
       README points to exact integration files/lines
 - [ ] Live demo link optional but judges love runnable things (`npx mdcp`)

@@ -29,7 +29,7 @@ Side-effect policy is derived from the ABI:
 - unlimited approve, delegatecall → blocked by default
 `,
   signing: `
-Keys never enter the sandbox. On approval, the host signer (Privy server wallet
+Keys never enter the sandbox. On approval, the host signer (local keystore
 or local keystore) signs. The sandbox only ever sees addresses and tx hashes.
 Resume re-validates: quotes are re-fetched and re-simulated against the slippage
 bound recorded at pause time; if drift exceeds the bound, the call returns

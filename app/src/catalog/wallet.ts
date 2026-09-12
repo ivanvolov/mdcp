@@ -1,8 +1,8 @@
 /**
- * Wallet integration (Privy prize target): balances + approvals.
- * Keys are host-side only (Privy server wallet or local keystore) — the sandbox
+ * Wallet integration: balances + approvals.
+ * Keys are host-side only (local keystore) — the sandbox
  * sees addresses and tx hashes, never key material.
- * TODO(h7-10): Privy server-wallet signer behind the pause/resume gate.
+ * TODO(h7-10): local keystore signer behind the pause/resume gate.
  */
 import type { ToolDef } from "./index.js";
 
