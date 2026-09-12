@@ -1,0 +1,9 @@
+# Carcass boundary artifact — never push to this repo's remote
+github.pointer.md
+
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log

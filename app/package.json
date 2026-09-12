@@ -1,0 +1,24 @@
+{
+  "name": "chainmode",
+  "version": "0.0.1",
+  "description": "Code-mode MCP gateway for DeFi: one execute() tool, whole on-chain pipelines in a single model round-trip",
+  "type": "module",
+  "bin": { "chainmode": "dist/index.js" },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "bench": "tsx bench/run.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "quickjs-emscripten": "^0.31.0",
+    "viem": "^2.21.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  }
+}
