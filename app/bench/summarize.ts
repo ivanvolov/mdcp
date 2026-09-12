@@ -75,8 +75,10 @@ const SCENARIOS: Scenario[] = [
     agentTokens: { baseline: 77_532, mdcp: 70_231 },
   },
   {
-    name: "4. Copy-trade",
+    name: "4. Copy-trade (3 mirrors)",
     files: { baseline: "s4-copytrade/baseline.jsonl", mdcp: "s4-copytrade/mdcp.jsonl" },
+    wallMs: { baseline: 190_295, mdcp: 116_203 },
+    agentTokens: { baseline: 71_365, mdcp: 64_279 },
   },
 ];
 
