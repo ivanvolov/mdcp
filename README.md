@@ -1,4 +1,4 @@
-# ETHOnline 2026 — chainmode
+# ETHOnline 2026 — mdcp
 
 Code-mode MCP gateway for DeFi: one `execute()` tool instead of hundreds of tool
 schemas. Whole on-chain pipelines (quote → simulate → approve → sign → submit) run

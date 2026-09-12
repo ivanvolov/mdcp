@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * chainmode — code-mode MCP gateway for DeFi.
+ * mdcp — code-mode MCP gateway for DeFi.
  *
  * Agent-facing surface is deliberately tiny (the token win):
  *   execute(code)  — run TypeScript in a sandbox with a lazy `tools.*` proxy
@@ -17,7 +17,7 @@ import { catalog } from "./catalog/index.js";
 
 const integrationNames = [...new Set(catalog.map((t) => t.path.split(".")[0]))];
 
-const server = new McpServer({ name: "chainmode", version: "0.0.1" });
+const server = new McpServer({ name: "mdcp", version: "0.0.1" });
 
 server.tool(
   "execute",

@@ -1,7 +1,7 @@
 /** Lazily served docs. Everything verbose lives here, never in tool descriptions. */
 export const SKILLS: Record<string, string> = {
   execute: `
-# chainmode execute() calling convention
+# mdcp execute() calling convention
 
 Write TypeScript. A global \`tools\` proxy gives progressive access to on-chain tools:
 

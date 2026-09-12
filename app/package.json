@@ -1,9 +1,9 @@
 {
-  "name": "chainmode",
+  "name": "mdcp",
   "version": "0.0.1",
   "description": "Code-mode MCP gateway for DeFi: one execute() tool, whole on-chain pipelines in a single model round-trip",
   "type": "module",
-  "bin": { "chainmode": "dist/index.js" },
+  "bin": { "mdcp": "dist/index.js" },
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
