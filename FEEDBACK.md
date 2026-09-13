@@ -51,23 +51,35 @@ Concrete consequences we hit, each worth fixing on its own:
    its economic fields plus occurrence index; we found and fixed two
    double-spend bugs in our own design purely because the layer existed to
    hold the invariant.)
-3. **Permit2 nonces are bound to live chain state, so the API works exactly once
-   against any non-live environment.** The `/quote` response signs a permit
-   whose nonce is read from mainnet. Execute that swap anywhere that diverges —
-   a fork, a simulation, a replay harness, a CI fixture — and the nonce
-   advances locally while the API keeps handing out the mainnet value. The
-   second swap reverts with Permit2 `InvalidNonce()` (surfacing as Universal
-   Router custom error `0x2c4029e9` wrapping selector `0x756688fe`), and every
-   swap after it does too. Measured directly: fork nonce `1`, live mainnet
-   nonce `0`, API-issued nonce `0`.
+3. **Permit2 nonces are bound to live chain state, and the failure is
+   undiscoverable.** The `/quote` response signs a permit whose nonce is read
+   from mainnet. Execute that swap anywhere that diverges — a fork, a
+   simulation, a replay harness, a CI fixture — and the nonce advances locally
+   while the API keeps handing out the mainnet value. The second swap reverts,
+   and every swap after it does too. Measured directly: fork nonce `1`, live
+   mainnet nonce `0`, API-issued nonce `0`.
 
-   The practical effect is that **you cannot test a multi-swap strategy against
-   the Trading API without spending real funds**. Any agent doing a basket, a
-   rebalance, or a backtest is blocked at leg two. This killed a three-leg
-   index-basket benchmark for us and is, we think, the single highest-value
-   thing on this list to fix: either let `/quote` accept a caller-supplied
-   nonce, or expose the nonce so a client can reconcile it against the chain it
-   is actually executing on.
+   **There is a documented way out** — the skill's "Legacy" approval path
+   (approve the token directly to the Universal Router once, omit
+   `permitData`/`signature` from `/swap`), listed as the right choice for
+   "backend services". So this is not a dead end, and we withdraw our first,
+   stronger claim that multi-swap strategies are untestable.
+
+   What we are reporting instead is the **distance between the failure and the
+   fix**. What surfaces on-chain is `ExecutionFailed(uint256,bytes)` as raw
+   custom error `0x2c4029e9` wrapping selector `0x756688fe` — no revert string,
+   no mention of nonces or Permit2 in anything the caller sees. Nothing in the
+   Permit2 section connects "your second swap reverts on a non-mainnet
+   environment" to "use Legacy". An agent following the skill end-to-end spent
+   **12 minutes, 180k tokens and three failed diagnostic scripts** getting from
+   the revert to the workaround — and it only got there by decoding selectors
+   by hand.
+
+   Two changes would close it: decode Permit2 errors into the `/swap` response
+   or the docs' error table, and add one line to the Permit2 section — *"the
+   nonce is derived from live mainnet state; if you execute anywhere else, use
+   the Legacy path."*
+
 4. **`gasLimit` in the /swap response has an undocumented trust boundary.** It
    is estimated against live-mainnet warm/cold state; against any other state —
    forks, simulations, replays — it under-provisions and the transaction
