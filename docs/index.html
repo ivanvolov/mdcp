@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mdcp — the code-mode MCP gateway for DeFi</title>
+<meta name="description" content="Agents shouldn't re-invent the hands of every protocol they touch. One execute tool, every protocol, with signing and approval enforced in code.">
+<style>
+  :root{
+    --bg:#fff; --bg-alt:#fafafa; --fg:#0a0a0a; --fg-2:#525252; --fg-3:#8a8a8a;
+    --line:#e6e6e6; --line-2:#f0f0f0;
+    --bar-base:#c9c9c9; --bar-mdcp:#0a0a0a;
+    --warn:#b45309; --warn-bg:#fffbeb; --warn-line:#fde68a;
+    --good:#047857;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0b0b0c; --bg-alt:#0f0f10; --fg:#f5f5f5; --fg-2:#a3a3a3; --fg-3:#6f6f6f;
+      --line:#232325; --line-2:#191919;
+      --bar-base:#3a3a3d; --bar-mdcp:#f5f5f5;
+      --warn:#fbbf24; --warn-bg:#1c1608; --warn-line:#3f2d09;
+      --good:#34d399;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:var(--sans); font-size:15px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 24px}
+  .rule{border-top:1px solid var(--line)}
+
+  /* nav */
+  nav{position:sticky; top:0; z-index:50; background:color-mix(in srgb,var(--bg) 88%,transparent);
+      backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex; align-items:center; gap:20px; height:56px}
+  .brand{display:flex; align-items:center; gap:9px; font-weight:650; letter-spacing:-.01em; text-decoration:none}
+  .brand .mark{width:20px;height:20px;border-radius:5px;background:var(--fg);display:grid;place-items:center;
+    color:var(--bg);font-family:var(--mono);font-size:11px;font-weight:700}
+  nav .sp{flex:1}
+  nav a.lnk{color:var(--fg-2); text-decoration:none; font-size:13.5px}
+  nav a.lnk:hover{color:var(--fg)}
+  .btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;
+    padding:7px 13px;font-size:13.5px;text-decoration:none;background:var(--bg);white-space:nowrap}
+  .btn:hover{border-color:var(--fg-3)}
+  .btn.solid{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+  /* hero */
+  header.hero{padding:86px 0 64px; text-align:center}
+  h1{font-size:clamp(34px,5.6vw,62px); line-height:1.03; letter-spacing:-.035em; margin:0 0 22px; font-weight:700}
+  .lede{max-width:640px; margin:0 auto; color:var(--fg-2); font-size:17px}
+  .lede code{font-family:var(--mono); font-size:.9em; background:var(--line-2); padding:1px 5px; border-radius:4px}
+
+  .statstrip{display:flex; flex-wrap:wrap; justify-content:center; gap:0; margin:44px auto 0;
+    border:1px solid var(--line); border-radius:12px; max-width:760px; overflow:hidden}
+  .stat{flex:1 1 180px; padding:18px 20px; border-right:1px solid var(--line); text-align:left}
+  .stat:last-child{border-right:0}
+  .stat b{display:block; font-size:24px; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+  .stat span{display:block; font-size:12px; color:var(--fg-3); font-family:var(--mono); margin-top:3px}
+  .herofoot{margin-top:18px; font-size:12.5px; color:var(--fg-3); font-family:var(--mono)}
+  .herofoot a{color:var(--fg-2)}
+
+  /* section scaffold */
+  section{padding:80px 0}
+  .eyebrow{font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--fg-3); margin:0 0 14px}
+  h2{font-size:clamp(26px,3.6vw,40px); letter-spacing:-.03em; line-height:1.1; margin:0 0 14px; font-weight:700}
+  .sub{color:var(--fg-2); max-width:620px; margin:0}
+  .center{text-align:center}
+  .center .sub{margin-left:auto;margin-right:auto}
+
+  /* ---- interactive block ---- */
+  .lab{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.05fr); gap:46px; margin-top:48px; align-items:start}
+  @media (max-width:880px){.lab{grid-template-columns:1fr; gap:34px}}
+
+  .meters{display:flex; flex-direction:column; gap:26px}
+  .meter h4{margin:0 0 2px; font-size:14px; font-weight:600}
+  .meter .hint{font-family:var(--mono); font-size:11px; color:var(--fg-3); margin-bottom:12px}
+  .row{display:grid; grid-template-columns:96px 1fr; gap:10px; align-items:center; margin-bottom:9px}
+  .row .who{font-size:12px; color:var(--fg-2); display:flex; align-items:center; gap:6px}
+  .row .who i{width:7px;height:7px;border-radius:2px;background:var(--bar-base);display:inline-block;flex:none}
+  .row.mdcp .who i{background:var(--bar-mdcp)}
+  .track{position:relative; display:block; min-width:0}
+  .track .val{display:block; font-family:var(--mono); font-size:11.5px; color:var(--fg-2); text-align:right; margin-bottom:4px;
+    font-variant-numeric:tabular-nums; min-height:16px}
+  .track .val b{color:var(--fg); font-weight:600}
+  .bar{display:block; height:6px; border-radius:3px; background:var(--line-2); overflow:hidden}
+  .bar>span{display:block; height:100%; width:0; background:var(--bar-base); border-radius:3px;
+    transition:width .45s cubic-bezier(.22,1,.36,1)}
+  .row.mdcp .bar>span{background:var(--bar-mdcp)}
+  .verdict{font-family:var(--mono); font-size:11.5px; color:var(--good); margin-top:6px}
+  .verdict.bad{color:var(--warn)}
+
+  /* protocol grid */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  .gl{grid-column:1/-1; font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--fg-3); margin:10px 0 2px}
+  .gl:first-child{margin-top:0}
+  .p{display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:9px;
+    padding:11px 12px; cursor:pointer; user-select:none; background:var(--bg); text-align:left; width:100%;
+    font:inherit; color:inherit; transition:border-color .15s, background .15s}
+  .p:hover{border-color:var(--fg-3)}
+  .p[data-on="1"]{border-color:var(--fg); background:var(--bg-alt)}
+  .p[data-projected="1"]{border-style:dashed}
+  .p .box{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line);flex:none;display:grid;place-items:center;
+    color:var(--bg); font-size:11px; line-height:1}
+  .p[data-on="1"] .box{background:var(--fg);border-color:var(--fg)}
+  .p[data-on="1"] .box:after{content:"✓"}
+  .p .ico{width:20px;height:20px;border-radius:5px;flex:none;display:grid;place-items:center;
+    font-family:var(--mono);font-size:10px;font-weight:700;color:#fff}
+  .p .nm{flex:1; min-width:0}
+  .p .nm b{display:block; font-size:13.5px; font-weight:550; letter-spacing:-.01em}
+  .p .nm em{display:block; font-style:normal; font-family:var(--mono); font-size:10px; color:var(--fg-3);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .p .cnt{font-family:var(--mono); font-size:10.5px; color:var(--fg-3); flex:none}
+  .tagp{font-family:var(--mono);font-size:9.5px;color:var(--warn);border:1px solid var(--warn-line);
+    background:var(--warn-bg);border-radius:4px;padding:1px 4px;flex:none}
+
+  .notice{margin-top:14px; border:1px solid var(--warn-line); background:var(--warn-bg); color:var(--warn);
+    border-radius:9px; padding:10px 12px; font-size:12px; line-height:1.45; display:none}
+  .notice.on{display:block}
+  .notice code{font-family:var(--mono)}
+
+  /* code panes */
+  .panes{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:52px}
+  @media (max-width:880px){.panes{grid-template-columns:1fr}}
+  .pane h5{margin:0 0 10px; text-align:center; font-size:14px; font-weight:600}
+  .term{border:1px solid var(--line); border-radius:12px; background:var(--bg-alt); overflow:hidden; height:440px;
+    display:flex; flex-direction:column}
+  .term .tb{display:flex; align-items:center; gap:6px; padding:9px 12px; border-bottom:1px solid var(--line-2)}
+  .term .tb i{width:8px;height:8px;border-radius:50%;background:var(--line);display:block}
+  .term .tb .meta{margin-left:auto; font-family:var(--mono); font-size:10.5px; color:var(--fg-3);
+    font-variant-numeric:tabular-nums}
+  .term .tb .meta b{color:var(--fg-2)}
+  .term pre{margin:0; padding:14px 16px; overflow:auto; flex:1;
+    font-family:var(--mono); font-size:11.5px; line-height:1.65; color:var(--fg-2); white-space:pre}
+  .term pre b{color:var(--fg); font-weight:600}
+  .term pre .c{color:var(--fg-3)}
+  .term pre .g{color:var(--good)}
+
+  /* cards */
+  .cards{display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; margin-top:40px}
+  @media (max-width:880px){.cards{grid-template-columns:1fr}}
+  .card{padding:24px; border-right:1px solid var(--line); border-bottom:1px solid var(--line)}
+  .card .n{font-family:var(--mono); font-size:11px; color:var(--fg-3); margin-bottom:16px}
+  .card h3{margin:0 0 8px; font-size:15.5px; font-weight:600; letter-spacing:-.01em}
+  .card p{margin:0; color:var(--fg-2); font-size:13.5px}
+  .card code{font-family:var(--mono); font-size:.9em}
+
+  /* prose + table */
+  .prose{max-width:640px; color:var(--fg-2)}
+  .prose p{margin:0 0 16px}
+  .prose strong{color:var(--fg); font-weight:600}
+  .results{width:100%; border-collapse:collapse; margin-top:32px; font-size:13px}
+  .results th,.results td{text-align:left; padding:11px 12px; border-bottom:1px solid var(--line)}
+  .results th{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--fg-3); font-weight:400}
+  .results td{font-variant-numeric:tabular-nums}
+  .results td.n{font-family:var(--mono); font-size:12px}
+  .results tr td:first-child{font-weight:550; color:var(--fg)}
+  .win{color:var(--good); font-family:var(--mono); font-size:12px}
+  .loss{color:var(--warn); font-family:var(--mono); font-size:12px}
+
+  footer{padding:52px 0 64px; border-top:1px solid var(--line); color:var(--fg-3); font-size:13px}
+  footer .wrap{display:flex; flex-wrap:wrap; gap:18px; align-items:center}
+  footer a{color:var(--fg-2); text-decoration:none}
+  footer a:hover{color:var(--fg)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="mark">m</span> mdcp</a>
+    <span class="sp"></span>
+    <a class="lnk" href="#efficiency">Efficiency</a>
+    <a class="lnk" href="#what">What you get</a>
+    <a class="lnk" href="#results">Results</a>
+    <a class="btn solid" href="https://github.com/ivanvolov/mdcp">GitHub →</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <h1>Every protocol.<br>One tool.</h1>
+    <p class="lede">mdcp is a code-mode MCP gateway for DeFi. Instead of handing an agent
+      70KB of instructions for building its own executor, it exposes one <code>execute</code>
+      tool that runs a whole strategy as a sandboxed program — with signing, approval
+      gating and replay protection enforced in code rather than described in prose.</p>
+
+    <div class="statstrip">
+      <div class="stat"><b>1.42×</b><span>fewer agent tokens</span></div>
+      <div class="stat"><b>2.3×</b><span>faster wall clock</span></div>
+      <div class="stat"><b>16.6×</b><span>less to read to execute</span></div>
+      <div class="stat"><b>4</b><span>public sepolia txs</span></div>
+    </div>
+    <p class="herofoot">Live Ethereum Sepolia · production Uniswap Trading API · one fresh agent per operation ·
+      <a href="https://github.com/ivanvolov/mdcp/blob/main/BENCHMARK.md">full methodology →</a></p>
+  </div>
+</header>
+
+<div class="rule"></div>
+
+<!-- ══════════════ interactive block ══════════════ -->
+<section id="efficiency">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow">Context efficiency</p>
+      <h2>Add protocols, not overhead.</h2>
+      <p class="sub">Every DeFi protocol ships its own execution guide and expects the agent to
+        rebuild quoting, approvals, signing and receipts from scratch. mdcp writes the hands once.
+        Toggle protocols and watch what each side actually costs.</p>
+    </div>
+
+    <div class="lab">
+      <!-- meters -->
+      <div class="meters">
+        <div class="meter">
+          <h4>Instructions to read before the first call</h4>
+          <div class="hint">bytes of execution docs · lower is better</div>
+          <div class="row"><span class="who"><i></i>Official skills</span>
+            <span class="track"><span class="val" id="v-instr-a"></span><span class="bar"><span id="b-instr-a"></span></span></span></div>
+          <div class="row mdcp"><span class="who"><i></i>mdcp</span>
+            <span class="track"><span class="val" id="v-instr-b"></span><span class="bar"><span id="b-instr-b"></span></span></span></div>
+          <div class="verdict" id="r-instr"></div>
+        </div>
+
+        <div class="meter">
+          <h4>Agent tokens per task</h4>
+          <div class="hint">measured across the full agent run · lower is better</div>
+          <div class="row"><span class="who"><i></i>Official skills</span>
+            <span class="track"><span class="val" id="v-tok-a"></span><span class="bar"><span id="b-tok-a"></span></span></span></div>
+          <div class="row mdcp"><span class="who"><i></i>mdcp</span>
+            <span class="track"><span class="val" id="v-tok-b"></span><span class="bar"><span id="b-tok-b"></span></span></span></div>
+          <div class="verdict" id="r-tok"></div>
+        </div>
+
+        <div class="meter">
+          <h4>Wall clock per task</h4>
+          <div class="hint">start to finished answer · lower is better</div>
+          <div class="row"><span class="who"><i></i>Official skills</span>
+            <span class="track"><span class="val" id="v-sec-a"></span><span class="bar"><span id="b-sec-a"></span></span></span></div>
+          <div class="row mdcp"><span class="who"><i></i>mdcp</span>
+            <span class="track"><span class="val" id="v-sec-b"></span><span class="bar"><span id="b-sec-b"></span></span></span></div>
+          <div class="verdict" id="r-sec"></div>
+        </div>
+
+        <div class="meter">
+          <h4>Round-trips through the model</h4>
+          <div class="hint">tool invocations · lower is better</div>
+          <div class="row"><span class="who"><i></i>Official skills</span>
+            <span class="track"><span class="val" id="v-cal-a"></span><span class="bar"><span id="b-cal-a"></span></span></span></div>
+          <div class="row mdcp"><span class="who"><i></i>mdcp</span>
+            <span class="track"><span class="val" id="v-cal-b"></span><span class="bar"><span id="b-cal-b"></span></span></span></div>
+          <div class="verdict" id="r-cal"></div>
+        </div>
+      </div>
+
+      <!-- protocol grid -->
+      <div>
+        <div class="grid" id="grid"></div>
+        <div class="notice" id="notice"></div>
+      </div>
+    </div>
+
+    <!-- code panes -->
+    <div class="panes">
+      <div class="pane">
+        <h5>Without mdcp</h5>
+        <div class="term">
+          <div class="tb"><i></i><i></i><i></i>
+            <span class="meta" id="m-left"></span></div>
+          <pre id="p-left"></pre>
+        </div>
+      </div>
+      <div class="pane">
+        <h5>With mdcp</h5>
+        <div class="term">
+          <div class="tb"><i></i><i></i><i></i>
+            <span class="meta" id="m-right"></span></div>
+          <pre id="p-right"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ══════════════ what you get ══════════════ -->
+<section id="what">
+  <div class="wrap">
+    <p class="eyebrow">What you get</p>
+    <h2>The model reasons.<br>mdcp handles the chain.</h2>
+
+    <div class="cards">
+      <div class="card"><div class="n">01</div>
+        <h3>Three tools, any catalog</h3>
+        <p><code>execute</code>, <code>resume</code>, <code>skills</code> — no matter how many
+        chain capabilities sit behind them. The agent writes a program; the loop lives in the program.</p></div>
+
+      <div class="card"><div class="n">02</div>
+        <h3>Plan first, approve once</h3>
+        <p>The first <code>execute</code> broadcasts nothing. The whole strategy runs in a planning
+        pass and every transaction it intends comes back as one reviewable list.</p></div>
+
+      <div class="card"><div class="n">03</div>
+        <h3>Keys never enter the sandbox</h3>
+        <p>QuickJS on WebAssembly — no network, no filesystem, no env. A program can <em>ask</em>
+        for a swap; it cannot produce a signature.</p></div>
+
+      <div class="card"><div class="n">04</div>
+        <h3>Replay protection built in</h3>
+        <p>Each chain write gets an intent hash over its <em>economic</em> fields only, so a re-quote
+        after the price moves is still the same intent — not a second spend.</p></div>
+
+      <div class="card"><div class="n">05</div>
+        <h3>Policy from the side-effect class</h3>
+        <p>Every capability declares <code>view</code>, <code>local</code> or <code>chain</code>.
+        Only <code>chain</code> is gated. That is data on the tool, not a prompt instruction.</p></div>
+
+      <div class="card"><div class="n">06</div>
+        <h3>Official servers, unmodified</h3>
+        <p>The Graph's own <code>subgraph-mcp</code> runs <em>inside</em> the sandbox — same binary in
+        both benchmark arms. Nothing is forked or reimplemented.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ══════════════ results ══════════════ -->
+<section id="results">
+  <div class="wrap">
+    <p class="eyebrow">Measured, not asserted</p>
+    <h2>What the benchmark found.</h2>
+    <div class="prose">
+      <p>We didn't benchmark against a strawman. We took each protocol's <strong>own</strong> AI
+      artifact — Uniswap's skill suite verbatim, The Graph's MCP server unmodified, Hedera's
+      published skills with their own eval scenarios — and changed only the execution layer.
+      Fresh agents, empty context, both arms run in parallel, identical on-chain outcomes.</p>
+      <p>One of these rounds mdcp loses, and it is on the page for the same reason the wins are:
+      <strong>Hedera's official skill is good</strong>. It is 11.5KB, accurate, and the official agent
+      got it right first try. When the baseline has no waste, a gateway that removes waste saves
+      nothing — and the approval gate costs a round-trip the official skill never pays.</p>
+    </div>
+
+    <table class="results">
+      <thead><tr>
+        <th>Protocol</th><th>Scenario</th><th>Agent tokens</th><th>Wall clock</th><th>Round-trips</th><th>To read</th>
+      </tr></thead>
+      <tbody id="rtbody"></tbody>
+    </table>
+    <p class="herofoot" style="text-align:left;margin-top:18px">
+      N=1 per operation — we trust the direction and the mechanism, not the second decimal of any ratio.
+      Raw logs, caveats and the excluded scenario: <a href="https://github.com/ivanvolov/mdcp/blob/main/BENCHMARK.md">BENCHMARK.md</a>
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top" style="margin-right:8px"><span class="mark">m</span> mdcp</a>
+    <span class="sp" style="flex:1"></span>
+    <a href="https://github.com/ivanvolov/mdcp">Repo</a>
+    <a href="https://github.com/ivanvolov/mdcp/blob/main/BENCHMARK.md">Benchmark</a>
+    <a href="https://github.com/ivanvolov/mdcp/blob/main/ARCHITECTURE.md">Architecture</a>
+    <a href="https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md">Feedback</a>
+    <span style="flex-basis:100%;height:0"></span>
+    <span>Sandbox: <a href="https://www.npmjs.com/package/@executor-js/runtime-quickjs">@executor-js/runtime-quickjs</a> (MIT). Built for ETHGlobal.</span>
+  </div>
+</footer>
+
+<script>
+// ── data ───────────────────────────────────────────────────────────────────
+// Every `measured: true` figure is quoted from BENCHMARK.md in this repo.
+// Projected rows apply Uniswap's best measured ratios (index-bot: 2.81x tokens,
+// 11.0x wall clock, 5.0x round-trips, 16.6x instruction bytes) to a plausible
+// baseline. They are NOT benchmarked and are labelled as such everywhere.
+
+const P = [
+  { id:'uniswap', name:'Uniswap', color:'#FF007A', mono:'U', caps:11, measured:true, on:true,
+    blurb:'Trading API + v3 on-chain',
+    scenario:'DCA 50 USDC→WETH, production Trading API',
+    instr:[70117,4219], tok:[114967,63467], sec:[193,65], cal:[23,7],
+    left:['checkApproval()','quote()','buildPermit2Permit()','signTypedData()','swap()',
+          'sendRawTransaction()','waitForReceipt()','<span class="c">// + author your own viem executor (~10KB)</span>'] },
+
+  { id:'graph', name:'The Graph', color:'#6747ED', mono:'G', caps:9, measured:true, on:true,
+    blurb:'subgraph-mcp, unmodified',
+    scenario:'WETH/USDC venue comparison, 3 protocols',
+    instr:[162069,10329], tok:[73240,63169], sec:[193,119], cal:[19,3],
+    left:['searchSubgraphsByKeyword()','getSchemaByDeploymentId()  <span class="c">// 112,810 B of SDL</span>',
+          'executeQuery()','getDeploymentsBySubgraphId()','getTopSubgraphDeployments()',
+          '<span class="c">// + filter top-50 pool rows in context</span>'] },
+
+  { id:'hedera', name:'Hedera', color:'#222226', mono:'H', caps:11, measured:true, on:false,
+    blurb:'HTS + HCS, live testnet',
+    scenario:'HTS + HCS audit trail, live testnet',
+    instr:[42515,6599], tok:[69336,65172], sec:[90.7,179.3], cal:[10,10],
+    left:['new Client.forTestnet()','PrivateKey.fromStringDer()','TokenCreateTransaction()',
+          'TopicCreateTransaction()','TopicMessageSubmitTransaction()','sleep()  <span class="c">// poll consensus lag</span>',
+          'Buffer.from(m,"base64")','<span class="c">// + reconcile two separate skills (181 lines)</span>'] },
+
+  { id:'1inch', name:'1inch', color:'#1B314F', mono:'1', caps:8, measured:false, on:false,
+    blurb:'aggregation + fusion',
+    scenario:'projected from Uniswap',
+    instr:[58400,3520], tok:[121400,43203], sec:[214,19.5], cal:[25,5],
+    left:['getQuote()','approveCallData()','buildSwapTx()','signOrder()','submitFusionOrder()','pollOrderStatus()'] },
+
+  { id:'aave', name:'Aave', color:'#B6509E', mono:'A', caps:9, measured:false, on:false,
+    blurb:'supply · borrow · health factor',
+    scenario:'projected from Uniswap',
+    instr:[63900,3849], tok:[108900,38754], sec:[186,16.9], cal:[22,4],
+    left:['getReserveData()','getUserAccountData()','approve()','supply()','borrow()','checkHealthFactor()'] },
+
+  { id:'morpho', name:'Morpho', color:'#2470FF', mono:'M', caps:7, measured:false, on:false,
+    blurb:'vaults + markets',
+    scenario:'projected from Uniswap',
+    instr:[41200,2482], tok:[96300,34270], sec:[161,14.6], cal:[19,4],
+    left:['getMarketParams()','getVaultConfig()','approve()','deposit()','getPosition()'] },
+
+  { id:'curve', name:'Curve', color:'#A5A4F7', mono:'C', caps:8, measured:false, on:false,
+    blurb:'stable pools + gauges',
+    scenario:'projected from Uniswap',
+    instr:[55800,3361], tok:[104700,37260], sec:[177,16.1], cal:[21,4],
+    left:['getPool()','getDy()','approve()','exchange()','addLiquidity()','claimGauge()'] },
+];
+
+// ── helpers ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const nf = n => n.toLocaleString('en-US');
+const kb = b => b >= 1000 ? (b/1000).toFixed(b>=10000?0:1)+'k' : String(b);
+const tk = n => (n/1000).toFixed(n>=100000?0:1)+'k';
+const sec = s => s >= 60 ? Math.floor(s/60)+'m '+Math.round(s%60)+'s' : (Math.round(s*10)/10)+'s';
+const state = new Map(P.map(p => [p.id, p.on]));
+
+// ── protocol grid ──────────────────────────────────────────────────────────
+function renderGrid(){
+  const g = $('grid'); g.innerHTML = '';
+  const mk = label => { const d = document.createElement('div'); d.className='gl'; d.textContent=label; g.appendChild(d); };
+
+  mk('Connected · benchmarked');
+  P.filter(p=>p.measured).forEach(p => g.appendChild(chip(p)));
+  mk('Not connected · projected');
+  P.filter(p=>!p.measured).forEach(p => g.appendChild(chip(p)));
+}
+function chip(p){
+  const b = document.createElement('button');
+  b.type='button'; b.className='p';
+  b.dataset.on = state.get(p.id) ? '1' : '0';
+  if (!p.measured) b.dataset.projected = '1';
+  b.innerHTML =
+    '<span class="box"></span>' +
+    '<span class="ico" style="background:'+p.color+'">'+p.mono+'</span>' +
+    '<span class="nm"><b>'+p.name+'</b><em>'+p.blurb+'</em></span>' +
+    (p.measured ? '' : '<span class="tagp">projected</span>') +
+    '<span class="cnt">'+p.caps+'</span>';
+  b.addEventListener('click', () => { state.set(p.id, !state.get(p.id)); b.dataset.on = state.get(p.id)?'1':'0'; update(); });
+  return b;
+}
+
+// ── meters ─────────────────────────────────────────────────────────────────
+function setMeter(key, a, b, fmt, lowerWins){
+  const max = Math.max(a, b, 1);
+  $('v-'+key+'-a').innerHTML = '<b>'+fmt(a)+'</b>';
+  $('v-'+key+'-b').innerHTML = '<b>'+fmt(b)+'</b>';
+  $('b-'+key+'-a').style.width = (a/max*100)+'%';
+  $('b-'+key+'-b').style.width = (b/max*100)+'%';
+  const el = $('r-'+key);
+  if (!a && !b){ el.textContent='—'; el.className='verdict'; return; }
+  if (b <= a){ el.textContent = (a/(b||1)).toFixed(2)+'× less with mdcp'; el.className='verdict'; }
+  else { el.textContent = (b/(a||1)).toFixed(2)+'× more with mdcp'; el.className='verdict bad'; }
+}
+
+function update(){
+  const on = P.filter(p => state.get(p.id));
+  const sum = (k,i) => on.reduce((t,p) => t + p[k][i], 0);
+
+  setMeter('instr', sum('instr',0), sum('instr',1), b => kb(b)+' B');
+  setMeter('tok',   sum('tok',0),   sum('tok',1),   tk);
+  setMeter('sec',   sum('sec',0),   sum('sec',1),   sec);
+  setMeter('cal',   sum('cal',0),   sum('cal',1),   n => nf(n)+' calls');
+
+  // projection notice
+  const proj = on.filter(p => !p.measured);
+  const n = $('notice');
+  if (proj.length){
+    n.classList.add('on');
+    n.innerHTML = '<b>'+proj.map(p=>p.name).join(', ')+'</b> '+(proj.length>1?'are':'is')+
+      ' not connected yet. Their numbers are <b>projected</b> from Uniswap’s best measured ratio ' +
+      '(index-bot: 2.81× tokens, 11.0× wall clock) — not benchmarked. Untick to see measured figures only.';
+  } else n.classList.remove('on');
+
+  renderPanes(on);
+  renderTable();
+}
+
+// ── code panes ─────────────────────────────────────────────────────────────
+function renderPanes(on){
+  const instrA = on.reduce((t,p)=>t+p.instr[0],0);
+  const instrB = on.reduce((t,p)=>t+p.instr[1],0);
+  const caps   = on.reduce((t,p)=>t+p.caps,0);
+
+  $('m-left').innerHTML  = '<b>'+on.length+'</b> skill'+(on.length===1?'':'s')+' · <b>'+nf(instrA)+'</b> B · ~'+tk(instrA/4)+' tok';
+  $('m-right').innerHTML = '<b>3</b> tools · <b>'+nf(instrB)+'</b> B · ~'+tk(instrB/4)+' tok';
+
+  if (!on.length){
+    $('p-left').innerHTML  = '<span class="c">// pick a protocol →</span>';
+    $('p-right').innerHTML = '<span class="c">// pick a protocol →</span>';
+    return;
+  }
+
+  let L = '<span class="c">"You are a helpful assistant."</span>\n\n<span class="c">// read every execution guide, then build the executor yourself</span>\n';
+  on.forEach(p => {
+    L += '\n<b>## '+p.name+'</b> <span class="c">— '+nf(p.instr[0])+' B</span>\n';
+    p.left.forEach(l => { L += '  ' + l + '\n'; });
+  });
+  L += '\n<span class="c">// every session. from scratch. per protocol.</span>';
+  $('p-left').innerHTML = L;
+
+  let R = '<span class="c">// the only tools your client sees: execute · resume · skills</span>\n\n' +
+    'Run a TypeScript program in a sandbox next to the chain.\n\n' +
+    '<b>## Workflow</b>\n' +
+    '1. const q = await tools[<span class="g">"uniswap.apiQuote"</span>]({ tokenIn: <span class="g">"USDC"</span>, ... });\n' +
+    '2. if (BigInt(q.amountOut) &lt; floor) return { skipped: <span class="g">"price"</span> };\n' +
+    '3. return await tools[<span class="g">"uniswap.apiSwap"</span>]({ ... });\n\n' +
+    '   → <span class="g">"awaiting_approval"</span> · plan reviewed once · resume(id, true)\n\n' +
+    '<b>## Connected capabilities</b> <span class="c">('+caps+')</span>\n';
+  on.forEach(p => {
+    R += '  - <b>'+p.id+'.*</b>'+' '.repeat(Math.max(1,12-p.id.length))+
+         '<span class="c">'+p.caps+' capabilities'+(p.measured?'':' · projected')+'</span>\n';
+  });
+  R += '\n<span class="c">// loops, retries and discarded quotes stay in the sandbox.</span>\n' +
+       '<span class="c">// only the return value reaches the model.</span>';
+  $('p-right').innerHTML = R;
+}
+
+// ── results table ──────────────────────────────────────────────────────────
+function renderTable(){
+  const t = $('rtbody'); t.innerHTML = '';
+  P.filter(p=>p.measured).forEach(p => {
+    const rt = (a,b)=> b<=a ? '<span class="win">'+(a/b).toFixed(2)+'×</span>' : '<span class="loss">'+(b/a).toFixed(2)+'× slower</span>';
+    t.insertAdjacentHTML('beforeend',
+      '<tr><td>'+p.name+'</td><td style="color:var(--fg-2)">'+p.scenario+'</td>' +
+      '<td class="n">'+tk(p.tok[0])+' → '+tk(p.tok[1])+' '+rt(p.tok[0],p.tok[1])+'</td>' +
+      '<td class="n">'+sec(p.sec[0])+' → '+sec(p.sec[1])+' '+rt(p.sec[0],p.sec[1])+'</td>' +
+      '<td class="n">'+p.cal[0]+' → '+p.cal[1]+'</td>' +
+      '<td class="n">'+kb(p.instr[0])+' → '+kb(p.instr[1])+' B</td></tr>');
+  });
+}
+
+renderGrid();
+update();
+</script>
+</body>
+</html>
