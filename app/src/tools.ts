@@ -13,6 +13,7 @@ import { z } from "zod";
 import fs from "node:fs";
 import path from "node:path";
 import * as chain from "./chain.js";
+import * as api from "./tradingApi.js";
 
 /**
  * "chain" is the only class that moves funds and therefore the only one gated
@@ -108,6 +109,26 @@ export const TOOLS: ToolDef[] = [
     schema: z.object({ address: z.string(), blocks: z.number().optional() }),
     sideEffect: "view",
     invoke: (a) => chain.swapHistory(a),
+  },
+  {
+    path: "uniswap.apiQuote",
+    summary: "Live quote from the production Uniswap Trading API (BEST_PRICE routing).",
+    signature:
+      "uniswap.apiQuote(a: { tokenIn: string; tokenOut: string; amountIn: string }): { routing: string; amountOut: string; minimumAmountOut: string; gasFeeUSD: string; rawResponseBytes: number }",
+    schema: z.object({ tokenIn: z.string(), tokenOut: z.string(), amountIn: z.string() }),
+    sideEffect: "view",
+    invoke: (a) => api.apiQuote(a),
+  },
+  {
+    path: "uniswap.apiSwap",
+    summary:
+      "Full Trading API swap: check_approval -> quote -> permit -> swap tx, signed host-side and broadcast. One intent.",
+    signature:
+      "uniswap.apiSwap(a: { tokenIn: string; tokenOut: string; amountIn: string }): { routing: string; txHash: string; status: string; amountOut: string; approvalTxHash: string | null; rawApiBytesAbsorbed: number }",
+    schema: z.object({ tokenIn: z.string(), tokenOut: z.string(), amountIn: z.string() }),
+    sideEffect: "chain",
+    intentFields: ["tokenIn", "tokenOut", "amountIn"],
+    invoke: (a) => api.apiSwap(a),
   },
   {
     path: "token.allowance",
