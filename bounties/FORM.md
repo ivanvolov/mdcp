@@ -6,15 +6,15 @@ Plain text, already within the field limits. Copy each block verbatim.
 
 ## Short description (max 100 chars)
 
-executor.sh for DeFi: agents run code next to the chain instead of tool calls through their context
+Code mode for DeFi: the agent writes one program, it runs next to the chain. 11x faster to execute.
 
 `99 characters.`
 
 Alternates:
 
-- `The execution layer for DeFi agents: code runs next to the chain, only the answer reaches the model` (99)
-- `Tool calls are too slow and too expensive to trade on. mdcp runs the agent's code next to the chain` (99)
-- `Agents that trade can't afford tool calls. mdcp runs their code next to the chain. 11x faster.` (94)
+- `Don't make a trading agent call tools one at a time. Let it write code that runs next to the chain.` (99)
+- `The agent writes code, we run it next to the chain. DeFi agents get 11x faster and 25x less context` (99)
+- `Agents shouldn't call tools to trade. They should write code that runs next to the chain. 11x faster` (100)
 
 ---
 
@@ -22,9 +22,9 @@ Alternates:
 
 Agentic finance breaks on cost, not on ideas. An agent that trades runs a loop forever, and every turn of that loop pays twice: tokens, because the whole transcript is re-read, and seconds, because every step is a round-trip through the model. Spot a move, spend seven seconds acting on it, and you do not have a trading agent.
 
-executor.sh made the general argument: give a model one sandbox, not a hundred tools. mdcp is that argument built for DeFi, where the loop never stops and the payload is money.
+Outside crypto this already has a fix, and it is called code mode: stop handing the model a hundred tools to call one at a time, hand it a sandbox and let it write a program instead. Everything the program does stays inside the sandbox, and the model only ever sees what it returns. mdcp brings that to DeFi — where the loop never stops and the payload is money — on top of executor.sh's open-source sandbox runtime.
 
-The agent writes one small program. It runs in a sandbox sitting next to the chain, with Uniswap, The Graph and Hedera already mounted. The loop happens there. Quotes it rejected, pools it checked, balances it only needed for a comparison — none of it reaches the model. Only the answer does.
+So the agent writes one small program. It runs in a sandbox sitting next to the chain, with Uniswap, The Graph and Hedera already mounted. The loop happens there. Quotes it rejected, pools it checked, balances it only needed for a comparison — none of it reaches the model. Only the answer does.
 
 Measured against each protocol's own official agent tooling: up to 2.8x fewer tokens, up to 11x faster, 15-25x less data crossing into context. Against Hedera's MCP server, 47,766 bytes became 434. The gap widens with the task — triple the work and our side stays flat while the conventional one triples.
 
