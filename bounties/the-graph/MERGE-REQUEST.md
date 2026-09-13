@@ -74,7 +74,23 @@ README, `skills/README.md`, or the BENCHMARK intro, apply the same fix:
 
 ---
 
-## 5. `.mcp.json` / mounting profiles — FYI, no action needed
+## 5. `.gitignore` — minor, keeps a judge's tree clean
+
+The bench arm scripts write their default `BENCH_LOG` to
+`app/bench/logs/<track>-{baseline,mdcp}.jsonl`, so running any documented
+command leaves untracked files behind. Curated evidence lives in the numbered
+`s*/` directories and is committed; these top-level run logs are scratch. If
+you are touching `.gitignore` anyway:
+
+```
+app/bench/logs/*.jsonl
+```
+
+(The `s*/` subdirectories are unaffected by that pattern.)
+
+---
+
+## 6. `.mcp.json` / mounting profiles — FYI, no action needed
 
 `skills/mdcp-graph/SKILL.md` documents mounting with `GRAPH_UPSTREAM=1`, which
 your `profileWants()` still honors, so nothing is broken. If you would rather
