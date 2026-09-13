@@ -19,15 +19,21 @@ Alternates, same length class, if you prefer a different emphasis:
 
 ## Description (min 280 chars)
 
-Agents talking to on-chain systems today burn most of their context on plumbing. Every protocol hands them tens of kilobytes of instructions and asks them to rebuild the same executor — clients, ABIs, signing, retries — from scratch, every session. Every tool call drags its full payload through the transcript, and the transcript is re-read on every turn.
+Agentic finance does not work yet, and the reason is boring: the plumbing is too expensive.
 
-mdcp is that plumbing written once. It exposes three tools — execute / resume / skills — and runs the agent's program in a QuickJS sandbox with the integrations already mounted. Loops, conditionals, retries and discarded intermediate data stay next to the chain instead of in the model's context. Private keys never enter the sandbox. Chain writes stop for operator approval as a code-enforced gate rather than a prompt instruction, and a resumed run replays already-landed transactions from an intent ledger instead of double-spending.
+An agent that trades is not an agent that answers one question. It runs constantly — watching, re-quoting, rebalancing, reacting. Every one of those turns pays the same tax twice. It pays tokens, because every protocol hands the model tens of kilobytes of instructions and every tool result gets dragged through the transcript and re-read on the next turn. And it pays seconds, because every step is a round-trip through the model. A cost you pay once is a rounding error. A cost you pay on every loop compounds until the strategy is not worth running.
 
-Three protocols sit behind that one surface: Uniswap (the production Trading API plus the on-chain v3 stack), The Graph (their official MCP server, unmodified), and Hedera (HTS/HCS through the Hiero SDK, plus their 43-tool mirror-node MCP server). Seventy-six capabilities behind three MCP tools and 13KB of always-loaded description — and a reviewer can mount one protocol at a time with MDCP_PROFILE=uniswap|graph|hedera|all.
+The time is what actually kills it. If you spot a move and it takes seven seconds of model round-trips to act on it, you do not have a trading agent. You have an expensive newsletter.
 
-We did not benchmark against a strawman. For Uniswap we took their own skill files verbatim and changed 12 lines of 126 — only the delegation target — then ran fresh agents on the same task, ending with real transactions on live Sepolia. For The Graph we mounted their own MCP server unmodified and ran the identical server against itself in both interaction shapes. For Hedera we measured both of their official AI surfaces and report both: against their SKILL.md suite there was no improvement, because those skills already tell the agent to write a script; against their per-tool MCP server the payload into context dropped from 47,766 bytes to 434. Every number in the repo ships with its raw logs and both agents' verbatim answers.
+executor.sh made this argument for software in general: do not hand a model a hundred tool schemas, hand it one sandbox and let it write code. mdcp is that idea built for DeFi, where it matters most — because here the loop never stops and the payload is money.
 
-Repo: https://github.com/ivanvolov/mdcp (public). Run it: RUN.md. Site: https://ivanvolov.github.io/mdcp/
+One execute tool instead of seventy-six schemas. The agent writes a small program; it runs in a sandbox sitting next to the chain, with Uniswap, The Graph and Hedera already mounted. The loop happens there. Quotes it rejected, pools it checked, balances it only needed for a comparison — none of that ever reaches the model. Only the answer does.
+
+That changes the economics instead of trimming them. Measured against each protocol's own official agent tooling: up to 2.8x fewer tokens, up to 11x faster, and 15-25x less data crossing into context — against Hedera's MCP server, 47,766 bytes became 434. The gap widens with the task: triple the work and our side stays roughly flat while the conventional one triples.
+
+And because the program is code, the safety is code. Keys never enter the sandbox. A strategy is planned in full before anything is signed, and the operator approves the whole plan once rather than leg by leg. "Ask the user first" written in a prompt is not a control. Agentic finance needs its guarantees enforced somewhere the model cannot talk its way around.
+
+DeFi needs its own standard for how agents touch it. This is a proposal for what that should look like.
 
 ---
 
