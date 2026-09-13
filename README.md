@@ -92,11 +92,27 @@ per-protocol skill bundles:
   Feedback for the Foundation: **[FEEDBACK.md](./FEEDBACK.md)** — claims verified
   against the live API, with a section for the ones that didn't survive checking.
 - **The Graph** — the official `subgraph-mcp` server, unmodified, mounted
-  *inside* the sandbox. Same binary in both arms of the benchmark; only the
-  interaction shape differs. Cross-protocol venue comparison over Messari
-  standardized subgraphs: 19 → 3 round-trips, 15.7x less tool payload in
-  context (70% of the baseline's payload was schema SDL).
-  See `app/bench/logs/s5-graph/RESULTS.md`.
+  *inside* the sandbox via a generic MCP-upstream adapter: mdcp connects as an
+  MCP client, discovers the upstream's tools at runtime, and re-exposes them to
+  sandboxed programs. **The same binary serves both arms of the benchmark**, so
+  the only variable is interaction shape — arguably our cleanest experiment.
+  The task is one query pattern on the Messari standardized schema, reused
+  verbatim across 4 protocols on 6 chains, all live from the gateway:
+
+  | | 3 targets | 10 targets |
+  | --- | --- | --- |
+  | tool invocations | 19 → 3 | 43 → 5 |
+  | agent tokens | 1.16x fewer | **1.34x fewer** |
+  | wall clock | 1.6x faster | **3.1x faster** |
+  | payload through context | 15.7x less | **25.0x less** |
+
+  Every ratio grows with task size: mdcp's cost is near-flat for 3.3x the work
+  while the conventional shape scales with N. The standardized schema is the
+  biggest single reason — the program never fetches a schema, and schema SDL
+  was **70% of the baseline's entire context payload**. Both arms produced
+  equivalent answers, and both caught the same two data-quality traps unprompted.
+  Skill: `skills/mdcp-graph/SKILL.md`. Evidence: `app/bench/logs/s5-graph/`,
+  `s6-graph-sweep/` (charts), `s7-graph-scale10/`.
 - **Hedera** — HTS via the Hiero SDK on live testnet, mirror-node reads.
 
 ## How it works
