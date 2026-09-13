@@ -59,6 +59,8 @@ console.log("RESULT outcome:", JSON.stringify(outcome, null, 2));
 if (outcome.status === "ok") {
   const r = outcome.result as any;
   console.log(`RESULT verify: https://hashscan.io/testnet/token/${r.tokenId}`);
+  // The Hiero SDK keeps gRPC channels open; without this the process never exits.
+  process.exit(0);
 } else {
   process.exit(1);
 }

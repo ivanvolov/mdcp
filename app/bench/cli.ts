@@ -10,6 +10,7 @@
  *
  * Every invocation appends a record to $BENCH_LOG.
  */
+import fs from "node:fs";
 import { TOOL_BY_PATH, TOOLS, jsonSafe } from "../src/tools.js";
 import { execute, resume } from "../src/sandbox.js";
 import { bytesOf, logCall } from "../src/instrument.js";
@@ -35,15 +36,25 @@ async function main() {
     return;
   }
 
-  // `execute` accepts either {"code": "..."} or the program source directly, so
-  // an agent does not have to JSON-escape a whole TypeScript file on a shell line.
+  // `execute` accepts {"code": "..."}, the program source directly, or
+  // `@path/to/program.ts` to read the source from a file.
+  //
+  // The file form exists because the benchmark measured the cost of the
+  // alternative: an agent composing a multi-line TypeScript program onto a
+  // shell command line spends real time on quoting and escaping, and a stray
+  // apostrophe in a comment costs a whole retry. Writing the program with the
+  // Write tool and passing a path removes that failure mode entirely.
   let payload: any = {};
   if (payloadRaw) {
-    try {
-      payload = JSON.parse(payloadRaw);
-    } catch {
-      if (command !== "execute") throw new Error(`invalid_json_args: ${payloadRaw}`);
-      payload = { code: payloadRaw };
+    if (command === "execute" && payloadRaw.startsWith("@")) {
+      payload = { code: fs.readFileSync(payloadRaw.slice(1), "utf8") };
+    } else {
+      try {
+        payload = JSON.parse(payloadRaw);
+      } catch {
+        if (command !== "execute") throw new Error(`invalid_json_args: ${payloadRaw}`);
+        payload = { code: payloadRaw };
+      }
     }
   }
 

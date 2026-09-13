@@ -1,0 +1,12 @@
+{"seq":0,"ts":1789293317615,"server":"mdcp","mcpTool":"execute","innerTool":"hts.network","argsBytes":2,"resultBytes":78,"durationMs":1117,"ok":true}
+{"seq":1,"ts":1789293317640,"server":"mdcp","mcpTool":"execute","innerTool":"hts.network","argsBytes":2,"resultBytes":78,"durationMs":16,"ok":true}
+{"seq":2,"ts":1789293318827,"server":"mdcp","mcpTool":"execute","innerTool":"hts.createToken","argsBytes":80,"resultBytes":178,"durationMs":1187,"ok":true}
+{"seq":3,"ts":1789293319747,"server":"mdcp","mcpTool":"execute","innerTool":"hts.createAccount","argsBytes":25,"resultBytes":180,"durationMs":919,"ok":true}
+{"seq":4,"ts":1789293321238,"server":"mdcp","mcpTool":"execute","innerTool":"hts.associate","argsBytes":53,"resultBytes":153,"durationMs":1488,"ok":true}
+{"seq":5,"ts":1789293322390,"server":"mdcp","mcpTool":"execute","innerTool":"hts.transfer","argsBytes":69,"resultBytes":153,"durationMs":1151,"ok":true}
+{"seq":0,"ts":1789293567190,"server":"mdcp","mcpTool":"execute","innerTool":"hts.network","argsBytes":2,"resultBytes":77,"durationMs":797,"ok":true}
+{"seq":1,"ts":1789293567215,"server":"mdcp","mcpTool":"execute","innerTool":"hts.network","argsBytes":2,"resultBytes":77,"durationMs":17,"ok":true}
+{"seq":2,"ts":1789293568666,"server":"mdcp","mcpTool":"execute","innerTool":"hts.createToken","argsBytes":80,"resultBytes":178,"durationMs":1451,"ok":true}
+{"seq":3,"ts":1789293570080,"server":"mdcp","mcpTool":"execute","innerTool":"hts.createAccount","argsBytes":25,"resultBytes":180,"durationMs":1413,"ok":true}
+{"seq":4,"ts":1789293571269,"server":"mdcp","mcpTool":"execute","innerTool":"hts.associate","argsBytes":53,"resultBytes":153,"durationMs":1188,"ok":true}
+{"seq":5,"ts":1789293572429,"server":"mdcp","mcpTool":"execute","innerTool":"hts.transfer","argsBytes":69,"resultBytes":153,"durationMs":1157,"ok":true}

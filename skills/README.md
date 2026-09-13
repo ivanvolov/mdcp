@@ -20,30 +20,38 @@ The strategy skill itself is the same size in both. The saving is entirely in
 what an agent must carry to *execute*, not in the strategy prompt — which is the
 point: mdcp replaces the execution layer, not the skill.
 
-## Hedera (HTS)
+## Hedera — one catalog skill for every native service
 
-Same play, second ecosystem. `hedera-official/` is the `hedera-token-service`
-skill copied verbatim from github.com/hedera-dev/hedera-skills @ 8b1fccd
-(`plugins/native-services-js`, Apache-2.0 — LICENSE included), evals included:
-the official skill ships its own benchmark prompts in `evals/spec.json`, which
-the bench reuses as scenarios.
+`hedera-official/` holds two skills copied verbatim from
+github.com/hedera-dev/hedera-skills @ 8b1fccd (`plugins/native-services-js`,
+Apache-2.0 — LICENSE included), evals included: the official skills ship their
+own benchmark prompts in `evals/spec.json`, which the bench reuses as scenarios.
 
-`mdcp-port/hedera-token-service/` is the port. Unlike the Uniswap suite there
-is no separate strategy skill to preserve — the official SKILL.md *is* the
-execution layer (raw Hiero SDK instruction), so the port replaces it wholesale
-with the `hts.*` capability catalog on the mdcp gateway:
+- `hedera-token-service` — 24,098 bytes (SKILL.md 11,517 + references 12,581)
+- `hedera-consensus-service` — 18,417 bytes (SKILL.md 11,279 + references 7,138)
 
-- official: SKILL.md (11,517) + references (12,581) = 24,098 bytes
-- mdcp:     hedera-token-service port = ~4.6KB (5.2x smaller), and the
-  configure -> freeze -> sign -> execute -> receipt lifecycle, multi-party
-  association signatures, and net-zero transfer legs move out of the model's
-  hands entirely.
+**`mdcp-port/hedera-catalog/` is the port, and it is one file for both.** That
+is the design claim: the official suite splits Hedera by service, so anything
+spanning tokens *and* consensus means reading two skills and writing one script
+that reconciles them. The catalog skill is a single self-contained surface —
+11 capabilities (`hts.*` + `hcs.*`), calling convention and approval flow
+included, no prerequisite skill to read separately.
 
-All Hedera runs are level 3 (live testnet — HTS is a native service, there is
-no fork to run it on). `app/bench/arm-hedera.sh` is the arm;
-`app/bench/hedera-probe.ts` replays the official evals' "GameGold" scenario
-(create 8-decimal token, 1M supply, transfer 500 to a fresh account) as one
-mdcp program, deterministically, before any model tokens are spent.
+- official (both services): **42,515 bytes**
+- mdcp catalog: **~6.5KB, one file**
+
+The first Hedera round (`mdcp-port/hedera-token-service/`, kept for
+reproducibility — BENCHMARK.md §4) deliberately tested the *single*-service
+case and found mdcp cost-neutral and slower. That is the honest degenerate
+case: one well-documented service has nothing for a gateway to collapse. The
+catalog skill exists to test the axis that actually matters — composition.
+
+All Hedera runs are level 3 (live testnet — these are native services, there is
+no fork to run them on). `app/bench/arm-hedera.sh` is the arm (gated by
+`HEDERA_TOOLS=1`, so the Uniswap and Graph catalogs are untouched);
+`app/bench/programs/audit-trail.ts` is the two-service pipeline — create a
+topic, create and mint a token, write an audit event per step, read the trail
+back — run with `bash bench/arm-hedera.sh execute @bench/programs/audit-trail.ts`.
 
 ## The Graph
 

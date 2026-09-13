@@ -32,6 +32,8 @@ import {
   TokenMintTransaction,
   TokenSupplyType,
   TokenType,
+  TopicCreateTransaction,
+  TopicMessageSubmitTransaction,
   TransferTransaction,
   type Transaction,
 } from "@hiero-ledger/sdk";
@@ -227,6 +229,49 @@ export async function associate(a: { accountId: string; tokenId: string }) {
     .setTokenIds([a.tokenId]);
   const { txId, status, hashscanUrl } = await run(tx, [storedKey(a.accountId)]);
   return { status, txId, hashscanUrl };
+}
+
+// ---- HCS: Hedera Consensus Service ----
+//
+// Second native service in the same catalog. The official suite splits HTS and
+// HCS into two skills an agent must read separately; here they are one surface,
+// which is the point of the composition benchmark.
+
+export async function createTopic(a?: { memo?: string }) {
+  const tx = new TopicCreateTransaction();
+  if (a?.memo) tx.setTopicMemo(a.memo);
+  const { receipt, txId, status, hashscanUrl } = await run(tx);
+  return { topicId: receipt.topicId!.toString(), status, txId, hashscanUrl };
+}
+
+export async function submitMessage(a: { topicId: string; message: string }) {
+  // The SDK chunks messages over 1KB automatically; a receipt still comes back
+  // for the whole submission, so callers never handle chunking themselves.
+  const tx = new TopicMessageSubmitTransaction()
+    .setTopicId(a.topicId)
+    .setMessage(a.message);
+  const { receipt, txId, status, hashscanUrl } = await run(tx);
+  return {
+    status,
+    txId,
+    hashscanUrl,
+    sequenceNumber: receipt.topicSequenceNumber?.toString(),
+  };
+}
+
+export async function topicMessages(a: { topicId: string; limit?: number }) {
+  const res = await mirror(`/topics/${a.topicId}/messages?limit=${a.limit ?? 25}&order=asc`);
+  if (!res) throw new Error(`topic_not_found: ${a.topicId} (mirror node lags ~3s)`);
+  return {
+    topicId: a.topicId,
+    messages: (res.messages ?? []).map((m: any) => ({
+      sequenceNumber: String(m.sequence_number),
+      consensusTimestamp: m.consensus_timestamp,
+      // Mirror node returns the payload base64-encoded; decode so a program
+      // reads what it wrote instead of re-implementing this every time.
+      contents: Buffer.from(m.message, "base64").toString("utf8"),
+    })),
+  };
 }
 
 export async function transfer(a: {

@@ -206,7 +206,14 @@ export const TOOLS: ToolDef[] = [
 /**
  * HTS family — Hedera Token Service on live testnet, wrapping src/hedera.ts.
  *
- * Registered only when a Hedera operator key is configured, so the EVM bench
+ * Registered only on explicit opt-in (`HEDERA_TOOLS=1`, set by the Hedera arm
+ * scripts), exactly like `GRAPH_UPSTREAM=1` gates the Graph upstream. Keying
+ * this off the presence of HEDERA_OPERATOR_KEY is NOT safe: every arm script
+ * sources the same `.env`, so the key's mere existence silently added 8 tools
+ * to the Uniswap and Graph catalogs and inflated the `execute` description
+ * those recorded benchmarks were measured against.
+ *
+ * Gated so the EVM bench
  * arms keep a byte-identical catalog to the recorded runs. The SDK is imported
  * lazily for the same reason: no Hedera scenario, no protobuf startup cost.
  *
@@ -322,9 +329,55 @@ const HTS_TOOLS: ToolDef[] = [
     intentFields: ["amount", "serial"],
     invoke: async (a) => (await hedera()).transfer(a),
   },
+  {
+    path: "hcs.createTopic",
+    summary: "Create a Hedera Consensus Service topic (an append-only, timestamped log).",
+    signature:
+      "hcs.createTopic(a?: { memo?: string }): { topicId: string; status: string; txId: string; hashscanUrl: string }",
+    schema: z.object({ memo: z.string().optional() }),
+    sideEffect: "chain",
+    intentFields: ["memo"],
+    planStub: { topicId: "0.0.0-planned" },
+    invoke: async (a) => (await hedera()).createTopic(a),
+  },
+  {
+    path: "hcs.submitMessage",
+    summary:
+      "Append a message to an HCS topic. Chunking above 1KB is handled host-side.",
+    signature:
+      "hcs.submitMessage(a: { topicId: string; message: string }): { status: string; txId: string; sequenceNumber?: string }",
+    schema: z.object({ topicId: z.string(), message: z.string() }),
+    sideEffect: "chain",
+    /**
+     * Deliberately empty — the same trap as hashing a slippage bound.
+     *
+     * An audit message routinely embeds ids produced earlier in the same
+     * program, which are stubs during planning and real after approval. Hashing
+     * `message` would therefore change every intent between plan and resume, so
+     * nothing would match the approved set and the whole pipeline would bounce
+     * back for re-approval. Identity is tool + occurrence index, which is stable
+     * because the program replays deterministically. The operator still reviews
+     * the full message text — it is in `args` on the plan.
+     */
+    intentFields: [],
+    planStub: { sequenceNumber: "0" },
+    invoke: async (a) => (await hedera()).submitMessage(a),
+  },
+  {
+    path: "hcs.messages",
+    summary:
+      "Read messages from an HCS topic via the mirror node, base64-decoded (lags writes ~3s).",
+    signature:
+      "hcs.messages(a: { topicId: string; limit?: number }): { topicId: string; messages: { sequenceNumber: string; consensusTimestamp: string; contents: string }[] }",
+    schema: z.object({ topicId: z.string(), limit: z.number().optional() }),
+    sideEffect: "view",
+    // Reading back a topic the same program is still planning to create.
+    planStub: { messages: [] },
+    invoke: async (a) => (await hedera()).topicMessages(a),
+  },
 ];
 
-if (process.env.HEDERA_OPERATOR_KEY) TOOLS.push(...HTS_TOOLS);
+if (process.env.HEDERA_TOOLS === "1") TOOLS.push(...HTS_TOOLS);
 
 export const TOOL_BY_PATH = new Map(TOOLS.map((t) => [t.path, t]));
 
