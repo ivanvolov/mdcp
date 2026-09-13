@@ -195,8 +195,9 @@ MDCP_PROFILE=graph ./mdcp execute \
   'const r = await tools["graph.search_subgraphs_by_keyword"]({keyword:"uniswap"});
    return { ok: !!r };'
 
-# the cross-category program the benchmark measures: DEX + lending, 6 chains
-cd app && bash bench/arm-graph-mdcp.sh execute @bench/programs/defi-scan.ts
+# the cross-category program the benchmark measures: DEX + lending, 6 chains.
+# @paths resolve relative to app/, so this is @bench/... and not @app/bench/...
+MDCP_PROFILE=graph ./mdcp execute @bench/programs/defi-scan.ts
 ```
 
 mdcp mounts the official `graphops/subgraph-mcp` server **unmodified** as an MCP
@@ -287,5 +288,8 @@ set of rows.
 - **A swap reverts `OutOfGas` on a fork** — the Trading API's `gasLimit` is
   estimated against live mainnet state. We drop it and let the node estimate;
   see `FEEDBACK.md` §4 for why.
+- **`execute @some/path.ts` fails with ENOENT** — `@path` is resolved relative
+  to `app/`, because `./mdcp` cds there before running. From the repo root the
+  working form is `@bench/programs/dex-scan.ts`, not `@app/bench/...`.
 - **`npx tsx` is slow to start** — every command here pays one tsx startup.
   `npm run build` in `app/` produces `dist/` if you would rather run compiled.
