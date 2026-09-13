@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "Capability profiles for AI clients (Claude Code, Cursor, any MCP host).",
+    "Each entry is the SAME server with a different MDCP_PROFILE, so a reviewer",
+    "looking at one sponsor track mounts only that track's capabilities.",
+    "Enable the one you care about; you do not need the others.",
+    "Requires: cd app && npm install, and app/.env filled in (see app/.env.example).",
+    "Verify what a profile mounts without an AI client: ./mdcp surface hedera"
+  ],
+  "mcpServers": {
+    "mdcp-uniswap": {
+      "command": "./mdcp",
+      "args": ["serve"],
+      "env": { "MDCP_PROFILE": "uniswap", "CHAIN_PROFILE": "sepolia" }
+    },
+    "mdcp-graph": {
+      "command": "./mdcp",
+      "args": ["serve"],
+      "env": { "MDCP_PROFILE": "graph" }
+    },
+    "mdcp-hedera": {
+      "command": "./mdcp",
+      "args": ["serve"],
+      "env": { "MDCP_PROFILE": "hedera" }
+    },
+    "mdcp-all": {
+      "command": "./mdcp",
+      "args": ["serve"],
+      "env": { "MDCP_PROFILE": "all", "CHAIN_PROFILE": "sepolia" }
+    }
+  }
+}

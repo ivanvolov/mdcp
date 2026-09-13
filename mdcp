@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# mdcp — one entrypoint for every shape this repo ships.
+#
+#   ./mdcp execute '<program>'                 run a TypeScript program (CLI)
+#   ./mdcp execute @app/bench/programs/x.ts    ...or read it from a file
+#   ./mdcp resume '{"executionId":"..","approve":true}'
+#   ./mdcp serve                               run as an MCP server on stdio
+#   ./mdcp serve-baseline                      the conventional one-tool-per-call control arm
+#   ./mdcp surface [uniswap|hedera|graph|all]  print what a profile mounts
+#   ./mdcp <tool.path> '<json-args>'           call one capability directly
+#
+# Which capabilities are mounted is MDCP_PROFILE (default: everything the
+# per-family env flags enable). Env comes from app/.env; anything already
+# exported wins.
+set -euo pipefail
+cd "$(dirname "$0")/app"
+set -a; [ -f .env ] && . ./.env; set +a
+
+case "${1:-help}" in
+  serve)           shift; exec npx tsx src/mcp-mdcp.ts "$@" ;;
+  serve-baseline)  shift; exec npx tsx src/mcp-baseline.ts "$@" ;;
+  surface)         shift; exec npx tsx bench/probe-surface.ts "$@" ;;
+  *)               exec npx tsx bench/cli.ts "$@" ;;
+esac

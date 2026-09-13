@@ -11,13 +11,31 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { execute, resume, catalogSignatures } from "./sandbox.js";
+import { profileWants } from "./tools.js";
 import { bytesOf, logSurface } from "./instrument.js";
 
 // Upstream tools must land in the catalog before the execute description is
 // built, so their signatures appear in the surface the model sees.
-if (process.env.GRAPH_UPSTREAM === "1") {
-  const { ensureGraphTools } = await import("./graphUpstream.js");
-  await ensureGraphTools();
+// A judge mounting one track should not lose the server because a different
+// track's upstream is unreachable, so each mount is best-effort and reports to
+// stderr rather than aborting startup.
+if (profileWants("graph")) {
+  try {
+    const { ensureGraphTools } = await import("./graphUpstream.js");
+    await ensureGraphTools();
+  } catch (e) {
+    console.error(`[mdcp] graph upstream unavailable, graph.* not mounted: ${e}`);
+  }
+}
+
+if (profileWants("mirror")) {
+  try {
+    const { ensureMirrorTools } = await import("./hederaUpstream.js");
+    const { registerTools } = await import("./tools.js");
+    registerTools(await ensureMirrorTools());
+  } catch (e) {
+    console.error(`[mdcp] mirror-node upstream unavailable, mirror.* not mounted: ${e}`);
+  }
 }
 
 const server = new McpServer({ name: "mdcp", version: "0.1.0" });

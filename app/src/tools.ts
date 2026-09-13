@@ -377,7 +377,51 @@ const HTS_TOOLS: ToolDef[] = [
   },
 ];
 
-if (process.env.HEDERA_TOOLS === "1") TOOLS.push(...HTS_TOOLS);
+/**
+ * Capability profiles.
+ *
+ * A judge reviewing one sponsor track should be able to mount only that
+ * track's capabilities, so the surface they read is the surface that track
+ * is about. `MDCP_PROFILE` selects which families are mounted:
+ *
+ *   uniswap -> chain.* token.* wallet.* uniswap.* state.*
+ *   hedera  -> hts.* hcs.* mirror.* state.*
+ *   graph   -> graph.* state.*
+ *   all / unset -> everything the env flags enable (the historical behaviour)
+ *
+ * Unset is a no-op on purpose: every benchmark arm script in bench/ predates
+ * this and must keep producing the catalog it recorded its numbers against.
+ */
+const PROFILE = (process.env.MDCP_PROFILE ?? "").trim().toLowerCase();
+
+const PROFILE_FAMILIES: Record<string, string[]> = {
+  uniswap: ["chain.", "token.", "wallet.", "uniswap.", "state."],
+  hedera: ["hts.", "hcs.", "mirror.", "state."],
+  graph: ["graph.", "state."],
+};
+
+const ALLOWED_FAMILIES: string[] | undefined = PROFILE_FAMILIES[PROFILE];
+
+/** True when a capability belongs to the active profile (always true if unset). */
+export function inProfile(toolPath: string): boolean {
+  return !ALLOWED_FAMILIES || ALLOWED_FAMILIES.some((f) => toolPath.startsWith(f));
+}
+
+/** The graph/mirror upstreams are mounted by the servers, not here — they ask. */
+export function profileWants(family: "graph" | "mirror" | "hedera"): boolean {
+  if (PROFILE === "all") return true;
+  if (family === "hedera") return process.env.HEDERA_TOOLS === "1" || PROFILE === "hedera";
+  if (family === "graph") return process.env.GRAPH_UPSTREAM === "1" || PROFILE === "graph";
+  return process.env.MIRROR_UPSTREAM === "1" || PROFILE === "hedera";
+}
+
+if (profileWants("hedera")) TOOLS.push(...HTS_TOOLS);
+
+if (ALLOWED_FAMILIES) {
+  const kept = TOOLS.filter((t) => inProfile(t.path));
+  TOOLS.length = 0;
+  TOOLS.push(...kept);
+}
 
 export const TOOL_BY_PATH = new Map(TOOLS.map((t) => [t.path, t]));
 
@@ -389,6 +433,7 @@ export const TOOL_BY_PATH = new Map(TOOLS.map((t) => [t.path, t]));
 export function registerTools(defs: ToolDef[]) {
   for (const def of defs) {
     if (TOOL_BY_PATH.has(def.path)) continue;
+    if (!inProfile(def.path)) continue;
     TOOLS.push(def);
     TOOL_BY_PATH.set(def.path, def);
   }
