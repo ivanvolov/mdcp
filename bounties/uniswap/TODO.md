@@ -6,15 +6,10 @@ Legend: **[you]** needs a human · **[claude]** I can do it · **[done]** shippe
 
 ## Blocking — the bounty is not eligible without these
 
-- [ ] **[you] Submit the Uniswap Developer Feedback Form.**
-      https://developers.uniswap.org/hackathon-feedback
-      This is a **hard qualification requirement**, not a nicety: the prize text
-      says a completed form *"that includes the link to your FEEDBACK.md file"*.
-      Paste this link:
-      `https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md`
-      **Every field is pre-filled in `FEEDBACK-FORM.md`** — dropdowns, both
-      1-5 ratings, and all four text boxes, in the order the page shows them.
-      I cannot submit it; it needs your session.
+- [x] **[done] Uniswap Developer Feedback Form submitted** (2026-09-13), with
+      the FEEDBACK.md link included. This was the hard qualification gate for
+      the $3,000 track — it is now closed. Answers archived in
+      `FEEDBACK-FORM.md`.
 
 - [ ] **[you] Pick the 3 partner prizes** at submission. Uniswap is one
       candidate among four (see `../README.md`). Both Uniswap tracks belong to

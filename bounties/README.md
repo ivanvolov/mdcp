@@ -16,4 +16,4 @@ are a single decision across all folders here; see each TODO for its ask.
 | folder | sponsor | pool | status |
 | --- | --- | --- | --- |
 | `the-graph/` | The Graph | $15,000 / 3 tracks | ready to submit, needs video |
-| `uniswap/` | Uniswap Foundation | $5,000 / 1 open track | ready to submit, needs **feedback form** + video |
+| `uniswap/` | Uniswap Foundation | $5,000 / 1 open track | qualification complete, needs video |

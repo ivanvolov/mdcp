@@ -99,7 +99,7 @@ nor the skills. So everything between "API response" and "confirmed
 transaction" is DIY, and the agent following swap-integration wrote a fresh
 ~10KB viem script every session before its first trade.
 
-Two concrete bugs cost us hours. The Legacy approval path as documented does
+Two concrete bugs cost me time. The Legacy approval path as documented does
 not work: approving directly to the Universal Router reverts with 0xd81b2f2e,
 because the router pulls through Permit2 — the working path is ERC-20 approve
 to Permit2, then Permit2.approve(token, router, amount, expiration). And
