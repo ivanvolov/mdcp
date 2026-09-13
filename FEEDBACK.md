@@ -51,19 +51,36 @@ Concrete consequences we hit, each worth fixing on its own:
    its economic fields plus occurrence index; we found and fixed two
    double-spend bugs in our own design purely because the layer existed to
    hold the invariant.)
-3. **`gasLimit` in the /swap response has an undocumented trust boundary.** It
+3. **Permit2 nonces are bound to live chain state, so the API works exactly once
+   against any non-live environment.** The `/quote` response signs a permit
+   whose nonce is read from mainnet. Execute that swap anywhere that diverges —
+   a fork, a simulation, a replay harness, a CI fixture — and the nonce
+   advances locally while the API keeps handing out the mainnet value. The
+   second swap reverts with Permit2 `InvalidNonce()` (surfacing as Universal
+   Router custom error `0x2c4029e9` wrapping selector `0x756688fe`), and every
+   swap after it does too. Measured directly: fork nonce `1`, live mainnet
+   nonce `0`, API-issued nonce `0`.
+
+   The practical effect is that **you cannot test a multi-swap strategy against
+   the Trading API without spending real funds**. Any agent doing a basket, a
+   rebalance, or a backtest is blocked at leg two. This killed a three-leg
+   index-basket benchmark for us and is, we think, the single highest-value
+   thing on this list to fix: either let `/quote` accept a caller-supplied
+   nonce, or expose the nonce so a client can reconcile it against the chain it
+   is actually executing on.
+4. **`gasLimit` in the /swap response has an undocumented trust boundary.** It
    is estimated against live-mainnet warm/cold state; against any other state —
    forks, simulations, replays — it under-provisions and the transaction
    reverts OutOfGas mid-swap. Nothing in the docs says when the number can be
    trusted. A sentence would do.
-4. **`routingPreference: "CLASSIC"` is documented but rejected by the live API**
+5. **`routingPreference: "CLASSIC"` is documented but rejected by the live API**
    (`must be one of [BEST_PRICE, FASTEST]`). Independently rediscovered by the
    benchmarked agent, which burned two failed runs on it before working around
    via `protocols: ["V2","V3","V4"]`.
-5. **Request validation runs before authentication** — a missing key surfaces
+6. **Request validation runs before authentication** — a missing key surfaces
    as a body-validation 400 first, so newcomers debug schemas that were never
    the problem.
-6. **The API key requires an interactive login** with no programmatic path —
+7. **The API key requires an interactive login** with no programmatic path —
    the one manual step in an otherwise automatable flow, in a product suite
    aimed at agents.
 
