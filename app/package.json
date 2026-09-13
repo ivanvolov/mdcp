@@ -17,6 +17,7 @@
   "dependencies": {
     "@executor-js/codemode-core": "^1.6.8",
     "@executor-js/runtime-quickjs": "^1.6.8",
+    "@hiero-ledger/sdk": "^2.88.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "quickjs-emscripten": "^0.31.0",
     "viem": "^2.21.0",

@@ -51,10 +51,11 @@ export async function apiQuote(params: {
   tokenOut: string;
   amountIn: string;
 }) {
+  const NATIVE0 = "0x0000000000000000000000000000000000000000";
   const { data, rawBytes } = await post("/quote", {
     swapper: account.address,
-    tokenIn: resolveToken(params.tokenIn),
-    tokenOut: resolveToken(params.tokenOut),
+    tokenIn: params.tokenIn === NATIVE0 ? NATIVE0 : resolveToken(params.tokenIn),
+    tokenOut: params.tokenOut === NATIVE0 ? NATIVE0 : resolveToken(params.tokenOut),
     tokenInChainId: String(CHAIN_ID),
     tokenOutChainId: String(CHAIN_ID),
     amount: params.amountIn,
@@ -82,12 +83,17 @@ export async function apiSwap(params: {
   tokenOut: string;
   amountIn: string;
 }) {
-  const tokenIn = resolveToken(params.tokenIn);
-  const tokenOut = resolveToken(params.tokenOut);
+  const NATIVE = "0x0000000000000000000000000000000000000000";
+  const tokenIn =
+    params.tokenIn === NATIVE ? NATIVE : resolveToken(params.tokenIn);
+  const tokenOut =
+    params.tokenOut === NATIVE ? NATIVE : resolveToken(params.tokenOut);
   let absorbed = 0;
 
-  // 1. approval (approves Permit2, not the router)
-  const approvalRes = await post("/check_approval", {
+  // 1. approval (approves Permit2, not the router; native ETH needs none)
+  const approvalRes = params.tokenIn === NATIVE
+    ? { data: { approval: null }, rawBytes: 0 }
+    : await post("/check_approval", {
     walletAddress: account.address,
     token: tokenIn,
     amount: params.amountIn,
@@ -119,9 +125,9 @@ export async function apiSwap(params: {
   });
   absorbed += quoteRes.rawBytes;
   const { quote, permitData, routing } = quoteRes.data;
-  if (routing !== "CLASSIC") {
-    // UniswapX order flow needs an off-chain filler; out of scope for the fork.
-    throw new Error(`unsupported_routing: ${routing} (gateway handles CLASSIC)`);
+  if (routing !== "CLASSIC" && routing !== "WRAP" && routing !== "UNWRAP") {
+    // UniswapX order flow needs an off-chain filler; out of scope here.
+    throw new Error(`unsupported_routing: ${routing} (gateway handles CLASSIC/WRAP/UNWRAP)`);
   }
 
   // 3. permit2 signature, if the API asks for one

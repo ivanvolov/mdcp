@@ -39,6 +39,13 @@ export interface ToolDef {
    * broadcast a second transaction. Learned the hard way; see bench/e2e.ts.
    */
   intentFields?: string[];
+  /**
+   * Extra fields merged over the generic planning stub. HTS pipelines feed one
+   * receipt into the next call (createToken -> tokenId -> transfer), so the
+   * planning pass must hand back something shaped like the real receipt or the
+   * program dereferences undefined mid-plan.
+   */
+  planStub?: Record<string, unknown>;
   invoke: (args: any) => Promise<unknown>;
 }
 
@@ -195,6 +202,129 @@ export const TOOLS: ToolDef[] = [
     },
   },
 ];
+
+/**
+ * HTS family — Hedera Token Service on live testnet, wrapping src/hedera.ts.
+ *
+ * Registered only when a Hedera operator key is configured, so the EVM bench
+ * arms keep a byte-identical catalog to the recorded runs. The SDK is imported
+ * lazily for the same reason: no Hedera scenario, no protobuf startup cost.
+ *
+ * intentFields deliberately exclude ids minted earlier in the same program
+ * (tokenId, accountId): during the planning pass those are stub values, and
+ * hashing them would make every real intent look new on resume — the same rule
+ * that keeps amountOutMinimum out of swap intents.
+ */
+const hedera = () => import("./hedera.js");
+
+const HTS_TOOLS: ToolDef[] = [
+  {
+    path: "hts.network",
+    summary: "Hedera network, operator account id, and its HBAR balance.",
+    signature: "hts.network(): { network: string; operatorId: string; hbarBalance: string }",
+    schema: z.object({}),
+    sideEffect: "view",
+    invoke: async () => (await hedera()).networkInfo(),
+  },
+  {
+    path: "hts.tokenInfo",
+    summary: "Token metadata from the mirror node (lags writes by ~3s).",
+    signature:
+      "hts.tokenInfo(a: { tokenId: string }): { tokenId: string; name: string; symbol: string; type: string; decimals: number; totalSupply: string; treasury: string }",
+    schema: z.object({ tokenId: z.string() }),
+    sideEffect: "view",
+    invoke: async (a) => (await hedera()).tokenInfo(a),
+  },
+  {
+    path: "hts.balances",
+    summary: "HBAR and token balances of an account (defaults to the operator).",
+    signature:
+      "hts.balances(a?: { accountId?: string }): { accountId: string; hbar: string; tokens: Record<string,string> }",
+    schema: z.object({ accountId: z.string().optional() }),
+    sideEffect: "view",
+    invoke: async (a) => (await hedera()).accountBalances(a),
+  },
+  {
+    path: "hts.createToken",
+    summary:
+      "Create an HTS token (fungible or NFT collection). Treasury is the operator; admin+supply keys are set host-side.",
+    signature:
+      "hts.createToken(a: { name: string; symbol: string; decimals?: number; initialSupply?: string; tokenType?: 'fungible'|'nft'; maxSupply?: string }): { tokenId: string; status: string; txId: string; hashscanUrl: string }",
+    schema: z.object({
+      name: z.string(),
+      symbol: z.string(),
+      decimals: z.number().optional(),
+      initialSupply: z.string().optional(),
+      tokenType: z.enum(["fungible", "nft"]).optional(),
+      maxSupply: z.string().optional(),
+    }),
+    sideEffect: "chain",
+    intentFields: ["name", "symbol", "tokenType"],
+    planStub: { tokenId: "0.0.0-planned" },
+    invoke: async (a) => (await hedera()).createToken(a),
+  },
+  {
+    path: "hts.mint",
+    summary:
+      "Mint supply: amount for fungible, metadata array (one per serial) for NFTs.",
+    signature:
+      "hts.mint(a: { tokenId: string; amount?: string; metadata?: string[] }): { status: string; txId: string; newTotalSupply?: string; serials?: string[] }",
+    schema: z.object({
+      tokenId: z.string(),
+      amount: z.string().optional(),
+      metadata: z.array(z.string()).optional(),
+    }),
+    sideEffect: "chain",
+    intentFields: ["amount", "metadata"],
+    planStub: { newTotalSupply: "0", serials: ["1"] },
+    invoke: async (a) => (await hedera()).mint(a),
+  },
+  {
+    path: "hts.createAccount",
+    summary:
+      "Create a Hedera account with a host-generated key (key never enters the sandbox). Use as recipient in demos.",
+    signature:
+      "hts.createAccount(a?: { initialHbar?: number; maxAutoAssociations?: number }): { accountId: string; status: string; txId: string }",
+    schema: z.object({
+      initialHbar: z.number().optional(),
+      maxAutoAssociations: z.number().optional(),
+    }),
+    sideEffect: "chain",
+    intentFields: ["maxAutoAssociations"],
+    planStub: { accountId: "0.0.0-planned" },
+    invoke: async (a) => (await hedera()).createAccount(a),
+  },
+  {
+    path: "hts.associate",
+    summary:
+      "Associate an account with a token before it can receive it. Signed host-side with the account's stored key.",
+    signature:
+      "hts.associate(a: { accountId: string; tokenId: string }): { status: string; txId: string }",
+    schema: z.object({ accountId: z.string(), tokenId: z.string() }),
+    sideEffect: "chain",
+    intentFields: [],
+    invoke: async (a) => (await hedera()).associate(a),
+  },
+  {
+    path: "hts.transfer",
+    summary:
+      "Transfer HTS tokens (amount, fungible) or one NFT (serial). Debit/credit legs net to zero by construction.",
+    signature:
+      "hts.transfer(a: { tokenId: string; to: string; amount?: string; serial?: number; from?: string }): { status: string; txId: string; hashscanUrl: string }",
+    schema: z.object({
+      tokenId: z.string(),
+      to: z.string(),
+      amount: z.string().optional(),
+      serial: z.number().optional(),
+      from: z.string().optional(),
+    }),
+    sideEffect: "chain",
+    intentFields: ["amount", "serial"],
+    invoke: async (a) => (await hedera()).transfer(a),
+  },
+];
+
+if (process.env.HEDERA_OPERATOR_KEY) TOOLS.push(...HTS_TOOLS);
 
 export const TOOL_BY_PATH = new Map(TOOLS.map((t) => [t.path, t]));
 

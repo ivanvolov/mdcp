@@ -18,7 +18,13 @@ import path from "node:path";
 import { TOOL_BY_PATH, TOOLS, jsonSafe, type ToolDef } from "./tools.js";
 import { bytesOf, logCall } from "./instrument.js";
 
-const executor = makeQuickJsExecutor({ timeoutMs: 30_000 });
+/**
+ * 30s covers EVM pipelines; live Hedera runs pay ~3-5s consensus finality per
+ * write, so hedera arms raise this via env rather than every arm paying for it.
+ */
+const executor = makeQuickJsExecutor({
+  timeoutMs: Number(process.env.SANDBOX_TIMEOUT_MS ?? 30_000),
+});
 
 /** Structural mirror of the runtime's result shape. */
 interface ExecuteResult {
@@ -192,7 +198,9 @@ async function runCode(code: string, options: RunOptions = {}) {
             if (!plan.some((p) => p.intentHash === hash)) {
               plan.push({ tool: path, args, intentHash: hash });
             }
-            return PLANNED_STUB;
+            // Tools whose receipts feed later calls (HTS: tokenId, accountId)
+            // declare planStub fields so the planning pass keeps flowing.
+            return { ...PLANNED_STUB, ...(tool.planStub ?? {}) };
           }
 
           const started = Date.now();

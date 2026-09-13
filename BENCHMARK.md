@@ -15,7 +15,42 @@ same route, same output — so the comparison is between equally-successful runs
 
 ## 1. Official skill vs. the same skill on mdcp
 
-### Level 2 (headline): both arms on the production Trading API
+### Level 3: production — live Sepolia, one fresh agent per operation
+
+The test a user would actually experience. Eight fresh agents (one per
+operation per arm), live Ethereum Sepolia, production Trading API, real public
+transactions. Same wallet, runs sequenced to avoid nonce races; view operations
+returned byte-identical results across arms, swap operations each landed on
+chain with explorer-visible hashes.
+
+Per operation — official skill vs mdcp port (agent tokens / wall clock):
+
+- **quote 25 USDC->WETH** (view): 86,474 / 47s -> 54,683 / 21s (**1.58x / 2.2x**)
+- **wallet balances** (view): 60,168 / 62s -> 55,124 / 31s (**1.09x / 2.0x**)
+- **swap 25 USDC->WETH** (live tx): 85,794 / 145s -> 55,965 / 57s (**1.53x / 2.5x**)
+  - official [`0x868d...d598`](https://sepolia.etherscan.io/tx/0x868d375e517ba510c80d0479990ddef0a2b38d2e27a0d7b1e1afa93643bbd598), mdcp [`0xeb1b...3a10`](https://sepolia.etherscan.io/tx/0xeb1b2c71c5dd6aeddf3069ce006e6549300645699091fe0a5f813a0d07d93a10)
+- **swap 0.002 WETH->USDC** (live tx): 83,066 / 109s -> 56,366 / 49s (**1.47x / 2.2x**)
+  - official [`0x1124...189b`](https://sepolia.etherscan.io/tx/0x1124815a81bc13e5f05c7d6685962f3ab20e5156151b77f8dec40cf23fdb189b), mdcp [`0x3ea4...4fd6`](https://sepolia.etherscan.io/tx/0x3ea4f8f66fa24af26690f8fc9f29b1077c84b09bbeefc36140934d7165204fd6)
+
+Totals across the four operations: **315,502 -> 222,138 tokens (1.42x less),
+363s -> 158s (2.3x faster)**.
+
+Two structural observations the averages hide:
+
+- **mdcp's cost is flat across operations** — 54.7k / 55.1k / 56.0k / 56.4k
+  tokens whether the task is a read or a live swap. The official arm swings
+  60k–86k because each operation means re-deriving its own executor. Flat cost
+  is what makes an integration predictable enough to budget.
+- **The approval gate ran live on both mdcp swaps** (plan -> operator resume ->
+  broadcast) — the safety feature was on during the benchmark. The official arm
+  has no enforced gate; its AskUserQuestion checkpoint was a code comment.
+
+The full transaction trail, including earlier API-built transactions (a WRAP
+and a WETH->USDC sell), is public on the
+[burner address](https://sepolia.etherscan.io/address/0xEEb84a3a4B4930311dD7385c10559Bd309944b3f).
+Every request carried `x-agent-info: {"integration_name":"mdcp"}`.
+
+### Level 2: both arms on the production Trading API, execution on forks
 
 The strongest comparison: both arms use Uniswap's real Trading API — the path
 `swap-integration` actually prescribes (`check_approval` -> `quote` -> permit
