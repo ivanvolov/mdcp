@@ -41,7 +41,8 @@ deployed Substreams pipeline. Not claimed anywhere.
 
 ## Qualification evidence
 
-Requirements are quoted from `PRIZES.md` (verbatim sponsor text).
+Requirements are quoted verbatim from the sponsor's track text on
+<https://ethglobal.com/events/ethonline2026/prizes>.
 
 ### Both AI-track and standards-track common requirements
 

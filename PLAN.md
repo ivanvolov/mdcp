@@ -1,5 +1,11 @@
 # ETHOnline 2026 build plan — code-mode gateway for DeFi
 
+> **This is the plan as written before the build, left unedited on purpose.**
+> It is here as a planning artifact, not as a description of what shipped —
+> several things in it turned out differently once measured, and the results
+> that replaced its placeholders are in [BENCHMARK.md](./BENCHMARK.md). Where
+> the two disagree, BENCHMARK.md is what happened.
+
 **DEADLINE: Sun Sep 13, 12:00 pm EDT (16:00 UTC). Hard. ~24h left.**
 Track: Classic (from scratch — all code written during the event; MIT libraries allowed).
 
@@ -45,7 +51,7 @@ Measured demo: same Uniswap strategy setup, vanilla per-tool MCP vs us —
 2. **The Graph — Best AI Tooling (From Scratch) ($5k)**: literally "tooling that
    makes The Graph easier to use from AI environments like Claude". Our
    `tools.graph.*` integration: subgraph discovery + querying from the sandbox
-   (pool/token discovery feeds the Uniswap pipeline). Check quals in PRIZES.md.
+   (pool/token discovery feeds the Uniswap pipeline). Check quals on the event's prize page.
 3. **Privy — Best financial flow ($2.5k)**: Privy server wallets AS the host-side
    key custody — the sandbox never sees keys, Privy signs on resume. Natural fit.
    (Alternate: Bazantic "Agentify a new API" $1k if Privy integration stalls.)

@@ -297,6 +297,6 @@ Claude Sonnet subagents with empty context, on both arms equally.
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — the sandbox, policy, planning, idempotency
 - [FEEDBACK.md](./FEEDBACK.md) — feedback for the Uniswap Foundation
 - [skills/](./skills/) — the official suite and our port, side by side
-- [PRIZES.md](./PRIZES.md) — the event's prize information, captured locally
+- [bounties/](./bounties/) — per-sponsor evidence maps and submission paperwork
 - Site: <https://ivanvolov.github.io/mdcp/> — the benchmark figures and an
   interactive composability demo
