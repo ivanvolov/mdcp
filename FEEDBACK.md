@@ -80,6 +80,23 @@ Concrete consequences we hit, each worth fixing on its own:
    nonce is derived from live mainnet state; if you execute anywhere else, use
    the Legacy path."*
 
+   And the Legacy path itself is described in a way that does not work. The
+   table says to approve the token **"directly to the Universal Router"** — but
+   the router pulls funds through Permit2, so a direct ERC-20 approval to the
+   router changes nothing and the swap still reverts (we got custom error
+   `0xd81b2f2e` doing exactly what the table says). The working standing path is
+   two approvals: ERC-20 approve the token to **Permit2**, then
+   `Permit2.approve(token, router, amount, expiration)` for the on-chain
+   AllowanceTransfer. One corrected sentence plus a three-line snippet would
+   save every backend integrator this detour.
+
+   A related trap worth a warning in the docs: the natural expression for the
+   `uint48` expiration, `(1 << 48) - 1`, silently truncates to 32 bits in
+   JavaScript and yields `65535` — a timestamp in 1970, so the allowance reads
+   as already expired and the swap reverts for a reason unrelated to anything
+   the caller did. Both our gateway and the benchmarked agent hit this
+   independently.
+
 4. **`gasLimit` in the /swap response has an undocumented trust boundary.** It
    is estimated against live-mainnet warm/cold state; against any other state —
    forks, simulations, replays — it under-provisions and the transaction
