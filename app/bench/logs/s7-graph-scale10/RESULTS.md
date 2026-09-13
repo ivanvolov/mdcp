@@ -23,7 +23,7 @@ For each of 10 named targets: discover the subgraph ID live, read the latest
 |--------------------|------------------|-----------------|
 | agent tokens       | 73,240 → 63,169 (1.16x) | 95,481 → 71,004 (**1.34x**) |
 | wall clock         | 193s → 119s (1.6x)      | 479s → 154s (**3.1x**) |
-| tool invocations   | 19 → 3                  | 43 → 5 |
+| agent tool invocations | 19 → 3              | 43 → 5 |
 | transcript payload | 162,069 B → 10,329 B (15.7x) | 242,174 B → 9,670 B (**25.0x**) |
 
 Every ratio grew with task size — which is the claim. The mdcp arm's cost is

@@ -43,7 +43,7 @@ both independently flagged the protocol-level TVL corruption (see below).
 
 Where the baseline's bytes went:
 
-- 3 schema fetches = 112,810 bytes (~28k tokens) — **70% of its transcript
+- 3 schema fetches = 112,996 bytes (~28k tokens) — **69% of its transcript
   payload is GraphQL SDL** the model reads once and mostly never uses.
 - 3 top-50 pool queries ≈ 13 KB each — raw lists the model must filter
   in-context for the WETH∩USDC condition.

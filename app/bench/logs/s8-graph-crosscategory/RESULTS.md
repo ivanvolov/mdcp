@@ -1,8 +1,8 @@
 # Scenario 8 — one query pattern across protocol *categories*
 
-Not a benchmark — a capability demonstration, and the strongest form of the
-standardization argument. Scenarios 5–7 reuse one query across many DEXes.
-This one reuses the *same* query across DEXes **and lending markets**.
+Not a benchmark — a capability demonstration. Scenarios 5–7 reuse one query
+across many DEXes; this one reuses the *same* query across DEXes **and lending
+markets**.
 
 Run: 2026-09-13, live gateway. Program: `app/bench/programs/defi-scan.ts`.
 Raw output: `output.json`. Call log: `mdcp.jsonl`.
@@ -40,9 +40,7 @@ The ranking puts Uniswap V3 Ethereum ($136B) above Aave v3 ($24.6B) above Curve
 ($4.8B) above Compound III ($1.9B) — a cross-category comparison that is only
 possible because the TVL field means the same thing in both schemas.
 
-## The part worth arguing for
-
-**Data quality is decided in the sandbox, in code, before anything is ranked.**
+## Data quality is decided in code, before anything is ranked
 Two failure modes are live in this dataset and neither raises an error:
 
 - a snapshot that stopped updating still returns a confident number

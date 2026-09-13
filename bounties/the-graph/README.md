@@ -1,8 +1,9 @@
 # The Graph — $15,000
 
 What we built for this bounty, which tracks it qualifies for, and where the
-evidence lives. Working docs: `TODO.md` (what is left), `SUBMISSION.md` (form
-answers), `DEMO.md` (video beats).
+evidence lives. Working docs: `TODO.md` (build state), `SUBMISSION.md` (form
+answers), `DEMO.md` (video beats), `MERGE-REQUEST.md` (changes needed in files
+owned by the merging session).
 
 ## The one-sentence version
 
@@ -53,7 +54,8 @@ layer at all. Block numbers in the logs advance across runs, which is the
 cheapest way for a judge to verify this.
 
 **"Submit a public repository and a short demo video (two to four minutes)."**
-Repo: https://github.com/ivanvolov/mdcp (public). Video: see `TODO.md`.
+Repo: https://github.com/ivanvolov/mdcp (public). Demo video: recorded and
+submitted with the entry (not a repo artifact).
 
 ### Track 2 (AI, From Scratch)
 
@@ -107,8 +109,8 @@ verbatim on all of them.
 **"Make the standards leverage clear: show what became easier because a shared
 schema or composed product was used."**
 This is the part we can *measure* rather than assert. Because the schema is
-shared, the program never fetches a schema at all — and schema SDL was **70% of
-the baseline's entire context payload** at N=3 (112,810 of 162,069 bytes). The
+shared, the program never fetches a schema at all — and schema SDL was **69% of
+the baseline's entire context payload** at N=3 (112,996 of 162,069 bytes). The
 standard is what turns "explore each protocol" into "loop the same query," and
 the sweep in `s6-graph-sweep/` plots exactly what that is worth as N grows.
 
@@ -131,14 +133,14 @@ agents with empty context, run in parallel, equivalent answers.
 | --- | --- | --- |
 | agent tokens | 73,240 → 63,169 (1.16x) | 95,481 → 71,004 (**1.34x**) |
 | wall clock | 193s → 119s (1.6x) | 479s → 154s (**3.1x**) |
-| tool invocations | 19 → 3 | 43 → 5 |
+| agent tool invocations | 19 → 3 | 43 → 5 |
 | transcript payload | 162,069 B → 10,329 B (15.7x) | 242,174 B → 9,670 B (**25.0x**) |
 
 Every ratio grows with task size — mdcp's cost is near-flat for 3.3x the work
 while the baseline's scales with N. A deterministic N=1…10 sweep (no model in
 the loop) isolates the mechanical component and plots the curve.
 
-Where the win comes from, in order of size: schemas never travel (70% of the
+Where the win comes from, in order of size: schemas never travel (69% of the
 baseline's payload), filtering happens next to the data instead of in context,
 dead ends (empty searches, unhealthy subgraphs) cost nothing, and N targets
 cost 4N round-trips instead of 1.

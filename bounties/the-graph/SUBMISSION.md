@@ -89,13 +89,13 @@ Results, with both agents producing equivalent answers:
 
 - At 3 targets: 19 → 3 tool invocations, 1.16x fewer agent tokens, 1.6x faster,
   and 15.7x less tool payload through the transcript (162 KB → 10 KB).
-- At 10 targets: 43 → 5 invocations, 1.34x fewer tokens, 3.1x faster, 25.0x
+- At 10 targets: 43 → 5 agent tool invocations, 1.34x fewer tokens, 3.1x faster, 25.0x
   less payload (242 KB → 9.7 KB).
 
 Every ratio grows with task size: mdcp's cost stays near-flat for 3.3x the work
 while the conventional shape scales with N. The standardized schema is the
 single biggest reason — because the schema is shared and known, the program
-never fetches one, and **schema SDL was 70% of the baseline's entire context
+never fetches one, and **schema SDL was 69% of the baseline's entire context
 payload**. A deterministic N=1…10 sweep (no model in the loop, both arms doing
 identical upstream work) plots the curve.
 

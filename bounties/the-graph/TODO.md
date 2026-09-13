@@ -23,8 +23,7 @@ event logistics (track picks, video, form pasting) live in your head, not here.
 - [x] **Cross-category demo** — `app/bench/programs/defi-scan.ts`, evidence in
       `s8-graph-crosscategory/`. One query pattern spanning DEX *and* lending,
       five schema versions, six chains, with stale and implausible values
-      quarantined in code before ranking. This is the strongest form of the
-      Track 1 standardization argument and it did not exist before today.
+      quarantined in code before ranking.
 - [x] **Runnable programs** — `dex-scan.ts` reproduces the benchmarked task
       without spending model tokens; `defi-scan.ts` is the cross-category one.
       Both take `execute @path/to/file.ts`, so no shell-quoting a program.
