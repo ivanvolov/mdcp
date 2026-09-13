@@ -10,6 +10,10 @@ Uniswap, Hedera and The Graph — so copying them here would fork the truth four
 hours before a deadline. Each bounty folder instead carries an artifact map
 pointing at the real files.
 
+**Submitting? Open [`SUBMIT.md`](./SUBMIT.md)** — prize picks, the general
+project fields, where each per-track answer lives, the video running order, and
+what is left that only you can do.
+
 ETHGlobal lets one project select **3 partner prizes** at submission. The picks
 are a single decision across all folders here; see each TODO for its ask.
 

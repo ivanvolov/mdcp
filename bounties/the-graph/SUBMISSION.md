@@ -3,10 +3,10 @@
 Paste-ready text for the ETHGlobal form. Read it in your own voice before
 submitting; I wrote it, you are the one signing it.
 
-The general fields (name / description / how it's made) are shared across all
-three partner picks — they live here because The Graph is the folder that
-needed them first. The **"how did you use The Graph"** answer is the one that
-is bounty-specific.
+The general fields below (name / description / how it's made) were drafted here
+first. **The canonical version now lives in [`../SUBMIT.md`](../SUBMIT.md) §2**,
+extended to cover all three partner picks — paste from there. The **"how did you
+use The Graph"** answer is the bounty-specific one and is canonical here.
 
 ---
 
