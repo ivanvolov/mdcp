@@ -20,7 +20,7 @@ local-development mode that removes testnet round trips.
 | --- | --- | --- |
 | Meaningful contribution to the Harness (open PR, not merged is fine) **OR** a new harness that extends or takes direct inspiration from it | met via the **second** arm; PR still open as an item | `app/src/hedera.ts`, `app/src/hederaUpstream.ts`, `skills/mdcp-port/hedera-catalog/` |
 | Public GitHub repo or PR link, with a README explaining the problem solved and how to run it | met | [github.com/ivanvolov/mdcp](https://github.com/ivanvolov/mdcp) — README "Hedera" section + Quickstart |
-| Demo video ≤ 5 minutes showing the improvement working | **outstanding** | `DEMO.md` in this folder |
+| Demo video ≤ 5 minutes showing the improvement working | **outstanding** | recorded for submission |
 
 ## Extra points → our evidence
 

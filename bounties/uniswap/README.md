@@ -1,8 +1,7 @@
 # Uniswap Foundation — $5,000
 
 What we built for this bounty, which track it qualifies for, and where the
-evidence lives. Working docs: `TODO.md` (what is left), `SUBMISSION.md` (form
-answers), `DEMO.md` (video beats).
+evidence lives. Form answers: `SUBMISSION.md`.
 
 ## The one-sentence version
 

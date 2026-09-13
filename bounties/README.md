@@ -24,5 +24,5 @@ are a single decision across all folders here; see each TODO for its ask.
 | `hedera/` | Hedera | $2,000 / Improve the Harness | complete — an upstream PR would strengthen requirement #1 |
 
 "repo status" means what is in this repository. The submission itself (prize
-picks, demo video, ETHGlobal form) is an operator task and is deliberately not
+picks, demo video, ETHGlobal form) is done at submission time and is deliberately not
 tracked here.

@@ -106,7 +106,6 @@ How to run it: [RUN.md](../RUN.md).
 Paste from these; each is written for that sponsor's question.
 
 - **The Graph** — `the-graph/SUBMISSION.md` → "How did you use The Graph?"
-  (includes which track to select if asked)
 - **Uniswap** — `uniswap/SUBMISSION.md` → "How did you use Uniswap, and what
   feedback do you have?" The feedback form is **already submitted**.
 - **Hedera** — `hedera/SUBMISSION.md` → "How did you use Hedera?" plus the
@@ -122,7 +121,7 @@ rejection on the Uniswap and Graph tracks.**
 
 ---
 
-## 5. What is still an operator task
+## 5. What is done at submission time
 
 Nothing in this list is a repo state; all of it is you.
 
@@ -134,5 +133,5 @@ Nothing in this list is a repo state; all of it is you.
 Optional, only if time survives:
 
 - [ ] Open the PR to `hedera-dev/mirrornode-mcp-server` — content is written and
-      tested (`hedera/TODO.md`); it turns Hedera qualification requirement #1
+      tested; it turns Hedera qualification requirement #1
       from "arguably" into unambiguous.

@@ -82,15 +82,6 @@ Measured with: mdcp is infrastructure for AI agents, so every benchmark is an AI
 
 ---
 
-# Partner prizes
-
-Links pinned to commit `3f06235` so line numbers stay correct.
-
-**Note on the feedback fields:** in the form as it stands, only **Hedera** and
-**The Graph** have an "Additional feedback for the Sponsor" box. **Uniswap does
-not** — they collect it through their own Developer Feedback Form instead, so
-the FEEDBACK.md link goes inside the Uniswap applicability answer.
-
 ---
 
 ## Hedera — $15,000
@@ -99,21 +90,13 @@ the FEEDBACK.md link goes inside the Uniswap applicability answer.
 
 **Why you're applicable:**
 
-We built a new MCP standard for DeFi and used it two ways on Hedera. We mounted
-Hedera's own 43-tool `mirrornode-mcp-server` **unmodified** inside the sandbox,
-and we wrote one catalog covering HTS and HCS natively through the Hiero SDK on
-testnet.
+We built a new MCP standard for DeFi to save tokens and time for developers and users and ran Hedera's own 43-tool
+`mirrornode-mcp-server` on it, unmodified — plus one native HTS + HCS catalog
+on the Hiero SDK, live on testnet.
 
-- mirror-node, 6-endpoint portfolio + audit review: **47,766 → 434 bytes into
-  model context (110x), 6 → 1 round-trips**; catalog surface 36,968 → 7,932
-  bytes (4.7x)
-- HTS + HCS in one task: agent authored **181 → 25 lines**, because one 6.6KB
-  catalog replaces two official skills totalling 42,515 bytes
-
-Live testnet trail: token 0.0.10521642, topic 0.0.10521641. The operator key
-never enters the sandbox, and the whole multi-transaction pipeline is planned
-and approved as one unit before anything broadcasts — code-enforced, not a
-prompt instruction.
+- **110x less into model context** — 47,766 → 434 bytes, 6 → 1 round-trips
+- **4.7x smaller tool catalog** — 36,968 → 7,932 bytes
+- **181 → 25 lines** of agent-authored code on a two-service task
 
 **Link to the line of code:**
 
@@ -125,30 +108,15 @@ https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/hederaUpstream.ts#L123-L1
 
 **Ease of the API / protocol: 6**
 
-The Hiero SDK alone is closer to a 9. The 6 is the MCP server, below.
+The Hiero SDK alone is closer to a 9; the mirror-node MCP server needed a
+dependency pin and a transport swap before its tools were reachable.
 
 **Additional feedback:**
 
-The Hiero SDK is the good part — consistent transaction builders across HTS and
-HCS, receipts return the ids you actually need, HCS messages over 1KB chunk
-themselves.
-
-`mirrornode-mcp-server` cost us real time twice, both reproduced with the
-repo's own pinned dependencies. It does not start from a clean clone: `fastmcp`
-pulls `zod-to-json-schema`, which imports the `zod/v3` subpath, while the repo
-pins `zod@3.24.2`, which predates it. And once running, its SSE endpoint
-answers HTTP 500 "Error creating server" on every connection, so the 43 tools
-it defines are unreachable as shipped. We served its own `openApiZod.ts`
-definitions over stdio instead and left its files untouched — but a first-time
-integrator reads that 500 as their own mistake. A lockfile and a CI smoke test
-close both.
-
-Two smaller ones. The official agent suite splits HTS and HCS into separate
-skills, so anything spanning tokens and consensus means reading two documents
-(42,515 bytes) and hand-writing the reconciliation; one combined catalog helps
-agents more than two thorough ones. And the ~3s mirror-node lag after a write
-is correct behaviour but is not stated anywhere near the write path — an agent
-that reads back immediately gets a 404 and concludes its transaction failed.
+The Hiero SDK was a pleasure; the only detour was `mirrornode-mcp-server`, which
+didn't start from a clean clone for us (`fastmcp` pulls `zod-to-json-schema`,
+which imports the `zod/v3` subpath, while the repo pins `zod@3.24.2`) — a
+lockfile would save the next integrator the hour.
 
 ---
 
@@ -159,19 +127,15 @@ Standardized Graph Products.
 
 **Why you're applicable:**
 
-We built a new MCP standard for DeFi and mounted The Graph's own `subgraph-mcp`
-server inside it **unmodified** — mdcp connects as an MCP client, discovers its
-9 tools at runtime, re-exposes them in the sandbox. Same server, same live
-gateway data, both interaction shapes, so the only variable is the shape. Task:
-one Messari-standard query pattern across 4 protocols on 6 chains.
+We built a new MCP standard for DeFi to save tokens and time for developers and users and ran The Graph's own `subgraph-mcp` on
+it, unmodified — same server, same live gateway data, only the interaction
+shape differs. Task: one Messari-standard query across 4 protocols on 6 chains.
 
-- 10 targets: **43 → 5 tool calls, 242KB → 9.7KB transcript payload (25x),
-  479s → 154s (3.1x), 95k → 71k tokens**
-- 3 targets: 19 → 3 calls, 162KB → 10KB (15.7x)
-
-Every ratio grows with task size while our side stays near-flat — 63k → 71k
-tokens for 3.3x the work. Schema SDL alone was **69% of the baseline's entire
-context payload**, which is the standardized schema paying for itself.
+- **25x less transcript payload** — 242KB → 9.7KB, 43 → 5 tool calls, 3.1x
+  faster (10 targets)
+- 15.7x at 3 targets: every ratio grows with task size while our side stays
+  flat — 63k → 71k tokens for 3.3x the work
+- **schema SDL was 69% of the baseline's entire context payload**
 
 **Link to the line of code:**
 
@@ -179,24 +143,13 @@ https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/graphUpstream.ts#L108-L13
 
 **Ease of the API / protocol: 8**
 
+Clean clone, plain MCP, both the local binary and the hosted SSE bridge worked.
+
 **Additional feedback:**
 
-`subgraph-mcp` was the easiest of our three upstreams — clean clone, plain MCP,
-both the local binary and the hosted SSE bridge worked. Two things would help
-agents specifically.
-
-Schema discovery is priced like a read but behaves like a download: fetching an
-SDL is often more expensive than the query it enables. In our runs schema SDL
-was 69% of the baseline arm's whole context payload. A way to ask "is this
-subgraph on a known standard, and which version" without pulling the SDL would
-cut a large share of agent context spend outright.
-
-Freshness is invisible at the point of use. Two of our agents independently
-flagged PancakeSwap's BSC snapshot as ~41 days stale, which makes its top
-volume rank an artifact rather than a fact. It is knowable, but only if you
-think to look. A last-indexed-block or staleness field in the MCP response,
-instead of a separate status query, would let a program quarantine bad rows
-before ranking them.
+`subgraph-mcp` was the easiest upstream we integrated; the one thing we'd ask
+for is a last-indexed-block or staleness field in the response, since our
+agents had to catch a ~41-day-stale snapshot by hand before ranking on it.
 
 ---
 

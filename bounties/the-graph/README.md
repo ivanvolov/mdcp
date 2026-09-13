@@ -1,9 +1,7 @@
 # The Graph — $15,000
 
 What we built for this bounty, which tracks it qualifies for, and where the
-evidence lives. Working docs: `TODO.md` (build state), `SUBMISSION.md` (form
-answers), `DEMO.md` (video beats), `MERGE-REQUEST.md` (changes needed in files
-owned by the merging session).
+evidence lives. Form answers: `SUBMISSION.md`.
 
 ## The one-sentence version
 
@@ -33,8 +31,8 @@ data source. mdcp was begun during the event → Start Fresh pool.
 
 **3. AI Tooling or AI Use Case — Continuity — NOT eligible.**
 Reserved for projects that extend an existing open-source repo. mdcp is
-net-new, and a project sits in one pool. (If we ever open the upstream PR in
-`TODO.md`, it is a contribution we point at — not a pool change.)
+net-new, and a project sits in one pool. (An upstream contribution to
+`graphops/subgraph-mcp` would be something we point at, not a pool change.)
 
 **Featured Substreams challenge — out of scope.** We did not do prompt →
 deployed Substreams pipeline. Not claimed anywhere.
