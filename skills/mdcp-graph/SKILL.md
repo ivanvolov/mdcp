@@ -30,7 +30,32 @@ no cached or mocked data anywhere on this path.
 
    Without `SUBGRAPH_MCP_BIN`, mdcp bridges to the hosted service at
    `subgraphs.mcp.thegraph.com` via `npx mcp-remote` — zero install, slower start.
-3. Run anything with `GRAPH_UPSTREAM=1` (the bench scripts set it for you):
+3. Select the Graph profile with `MDCP_PROFILE=graph`, from the repo root:
+
+   ```bash
+   ./mdcp surface graph                              # what does this mount?
+   MDCP_PROFILE=graph ./mdcp execute @bench/programs/dex-scan.ts
+   ```
+
+   `surface` answers the mount question before you spend a token: it starts the
+   server the way an AI client would and prints the tool list, the byte size of
+   the always-loaded `execute` description, and the capability names inside it.
+   For this profile that is **11 capabilities — the 9 `graph.*` tools plus
+   `state.read` / `state.write` — in a 1,769-byte description.** The profile
+   leaves the Uniswap and Hedera catalogs unmounted, which is why the surface
+   is that small.
+
+   Two path details worth knowing, both of which cost a retry otherwise:
+
+   - `execute` takes a program inline, as `{"code":"..."}`, or as
+     `@path/to/file.ts`. Prefer the file form for anything multi-line — shell
+     quoting a TypeScript program is its own failure mode.
+   - The `@path` resolves **relative to `app/`**, not to your working
+     directory, because the launcher runs there. From the repo root it is
+     `@bench/programs/dex-scan.ts`, not `@app/bench/...`.
+
+   The recorded benchmark arms use the equivalent `GRAPH_UPSTREAM=1` flag
+   instead of the profile, which is what reproduces their exact catalog:
 
    ```bash
    cd app
@@ -38,25 +63,26 @@ no cached or mocked data anywhere on this path.
    bash bench/arm-graph-baseline.sh help              # or call the 9 tools one by one
    ```
 
-   `execute` takes a program inline, as `{"code":"..."}`, or as `@path/to/file.ts`.
-   Prefer the file form for anything multi-line — shell quoting a TypeScript
-   program is its own failure mode.
+   Both routes mount the same upstream; the flag keeps the full catalog, the
+   profile trims it to Graph.
 
 ## Mounting it in an AI client
 
-The above is the benchmark harness. To actually *use* this from Claude Code,
-Claude Desktop, or Cursor, mount mdcp as an MCP server — three tools total
-(`execute` / `resume` / `skills`), with all 9 Graph capabilities reachable from
-inside `execute`:
+The above is the command line. To use this from Claude Code, Claude Desktop, or
+Cursor, mount mdcp as an MCP server — three tools total (`execute` / `resume` /
+`skills`), with all 9 Graph capabilities reachable from inside `execute`.
+
+The repo root ships a `.mcp.json` with an `mdcp-graph` profile already defined,
+so a client opened on this repo can mount it directly. To wire it up yourself:
 
 ```json
 {
   "mcpServers": {
-    "mdcp": {
+    "mdcp-graph": {
       "command": "npx",
       "args": ["tsx", "/absolute/path/to/app/src/mcp-mdcp.ts"],
       "env": {
-        "GRAPH_UPSTREAM": "1",
+        "MDCP_PROFILE": "graph",
         "GATEWAY_API_KEY": "<your Studio key>",
         "SUBGRAPH_MCP_BIN": "<optional: path to the built binary>"
       }
@@ -68,9 +94,12 @@ inside `execute`:
 Claude Code one-liner equivalent:
 
 ```bash
-claude mcp add mdcp -e GRAPH_UPSTREAM=1 -e GATEWAY_API_KEY=<key> \
+claude mcp add mdcp-graph -e MDCP_PROFILE=graph -e GATEWAY_API_KEY=<key> \
   -- npx tsx /absolute/path/to/app/src/mcp-mdcp.ts
 ```
+
+`GRAPH_UPSTREAM=1` works in place of `MDCP_PROFILE=graph` anywhere above; it
+mounts the same tools alongside the other catalogs rather than instead of them.
 
 Then ask in natural language — *"compare WETH/USDC liquidity across Uniswap,
 Sushi and Curve"* — and the model writes one program instead of a dozen tool
@@ -90,7 +119,8 @@ Two programs in `app/bench/programs/`, both live against the gateway:
   LENDING 3.1.0) in a single run.
 
 ```bash
-bash bench/arm-graph-mdcp.sh execute @bench/programs/defi-scan.ts
+MDCP_PROFILE=graph ./mdcp execute @bench/programs/defi-scan.ts   # from repo root
+cd app && bash bench/arm-graph-mdcp.sh execute @bench/programs/defi-scan.ts
 ```
 
 ## Calling convention
