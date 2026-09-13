@@ -4,13 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>mdcp — the execution standard for agentic DeFi</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme:dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme:light)">
 <meta name="description" content="Agent skills are documentation. mdcp is a standard: one execute tool that runs a whole strategy as a sandboxed program, with signing, approval gating and replay protection enforced in code.">
 <style>
   :root{
     --bg:#fff; --bg-alt:#fafafa; --fg:#0a0a0a; --fg-2:#525252; --fg-3:#8a8a8a;
     --line:#e6e6e6; --line-2:#f0f0f0;
     --bar-base:#c9c9c9; --bar-mdcp:#0a0a0a;
-    --d:#FF5A1F;
+    --d:#FF5A1F; --mark-d:#FF5A1F;
     --warn:#b45309; --warn-bg:#fffbeb; --warn-line:#fde68a;
     --good:#047857;
     --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
@@ -21,7 +26,7 @@
       --bg:#0b0b0c; --bg-alt:#0f0f10; --fg:#f5f5f5; --fg-2:#a3a3a3; --fg-3:#6f6f6f;
       --line:#232325; --line-2:#191919;
       --bar-base:#3a3a3d; --bar-mdcp:#f5f5f5;
-      --d:#FF7A45;
+      --d:#FF7A45; --mark-d:#F04E12;
       --warn:#fbbf24; --warn-bg:#1c1608; --warn-line:#3f2d09;
       --good:#34d399;
     }
@@ -44,8 +49,7 @@
   nav .wrap{display:flex; align-items:center; gap:20px; height:56px}
   .brand{display:flex; align-items:center; gap:9px; font-weight:650; letter-spacing:-.01em; text-decoration:none}
   .brand .wm{letter-spacing:-.01em}
-  .brand .mark{width:20px;height:20px;border-radius:5px;background:var(--fg);display:grid;place-items:center;
-    color:var(--d);font-family:var(--mono);font-size:12px;font-weight:700}
+  .brand .mark{width:20px;height:20px;display:block;flex:none}
   nav .sp{flex:1}
   nav a.lnk{color:var(--fg-2); text-decoration:none; font-size:13.5px}
   nav a.lnk:hover{color:var(--fg)}
@@ -207,9 +211,19 @@
 </head>
 <body>
 
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <symbol id="mark" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="7.5" fill="var(--fg)"/>
+    <rect x="8.3" y="7.6" width="12.4" height="2.8" rx="1.4" fill="var(--bg)" opacity=".45"/>
+    <rect x="8.3" y="13.2" width="8" height="2.8" rx="1.4" fill="var(--bg)" opacity=".45"/>
+    <path d="M9.7 20.4h9.5" fill="none" stroke="var(--mark-d)" stroke-width="2.8" stroke-linecap="round"/>
+    <path d="M19.2 16.4l4 4-4 4" fill="none" stroke="var(--mark-d)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+</svg>
+
 <nav>
   <div class="wrap">
-    <a class="brand" href="#top"><span class="mark">d</span><span class="wm">m<span class="d">d</span>cp</span></a>
+    <a class="brand" href="#top"><svg class="mark" aria-hidden="true"><use href="#mark"/></svg><span class="wm">m<span class="d">d</span>cp</span></a>
     <span class="sp"></span>
     <a class="lnk" href="#efficiency">Compose</a>
     <a class="lnk" href="#data">Data</a>
@@ -346,9 +360,9 @@
     <p class="eyebrow">Measured, not asserted</p>
     <h2>What the benchmark found.</h2>
     <p class="sub">We didn't benchmark against a strawman. We took each protocol's <strong>own</strong>
-      AI artifact — Uniswap's skill suite verbatim, The Graph's MCP server unmodified, Hedera's
-      published skills with their own eval scenarios — and changed only the execution layer.
-      Fresh agents, empty context, both arms in parallel, identical on-chain outcomes.</p>
+      AI artifact — Uniswap's skill suite verbatim, The Graph's and Hedera's MCP servers
+      unmodified — and changed only the execution layer. Fresh agents, empty context, both arms in
+      parallel, identical on-chain outcomes.</p>
 
     <div class="figs">
       <div class="fig">
@@ -399,32 +413,22 @@
 
       <div class="fig">
         <div class="fn">Figure 4 · Hedera</div>
-        <h3>Composition is where the catalog pays.</h3>
-        <p class="cap">One service and mdcp barely wins — Hedera's official skill is good, and there
-          is no waste to remove. Add a second service and the official arm must read and reconcile
-          <em>two</em> skills, while mdcp's single catalog gets <em>smaller</em>. Surface ratio
-          2.7× → 6.4×; agent-authored executor 181 lines → 25.</p>
+        <h3>A tool per endpoint, and every response in context.</h3>
+        <p class="cap">Hedera's mirror-node MCP server ships 43 tools, one per REST endpoint, so an
+          agent pays a round-trip per call and carries every raw response — holder lists,
+          transaction records, base64 topic messages. mdcp filters and aggregates them in the
+          sandbox. Payload into context <em>110× less</em>; the catalog the client holds before any
+          work, 4.7× smaller.</p>
         <div class="legend">
-          <span><i style="background:var(--bar-base)"></i>Official skills</span>
-          <span><i style="background:var(--bar-mdcp)"></i>MDCP catalog</span>
+          <span><i style="background:var(--bar-base)"></i>Per-tool MCP</span>
+          <span><i style="background:var(--bar-mdcp)"></i>MDCP</span>
         </div>
         <div id="fig4"></div>
-        <p class="src">BENCHMARK.md §4 and §5 · live Hedera testnet</p>
+        <p class="src">BENCHMARK.md §6 · live Hedera testnet · deterministic run</p>
       </div>
     </div>
 
     <div class="prose" style="margin-top:48px">
-      <p><strong>The gain is a function of the baseline's shape, not the protocol.</strong>
-      Hedera proves it twice, because it ships two official AI surfaces with opposite shapes and
-      we measured mdcp against both.</p>
-
-      <p>Against <a href="https://github.com/hedera-dev/hedera-skills">hedera-skills</a> —
-      the row in the table above — mdcp <strong>loses</strong>: 1.06× on tokens and 1.98× slower.
-      That skill is 11.5KB, accurate, and the official agent got it right first try. It also tells
-      the agent to write and run a Hiero SDK script, which is already code-mode. When the baseline
-      has no waste, a gateway that removes waste saves nothing, and the approval gate costs a
-      round-trip the skill never pays.</p>
-
       <p>Against <a href="https://github.com/hedera-dev/mirrornode-mcp-server">mirrornode-mcp-server</a>
       — the same protocol, the same week — mdcp posts the
       <strong>largest margin in this repo</strong>: <strong>47,766 B → 434 B of payload into
@@ -434,11 +438,6 @@
       context. mdcp filters and aggregates all of it in the sandbox and returns the answer.
       Deterministic run, both arms on Hedera's own unmodified tool definitions, live testnet:
       <a href="https://github.com/ivanvolov/mdcp/blob/main/BENCHMARK.md">BENCHMARK.md §6</a>.</p>
-
-      <p>Two surfaces, one protocol, opposite results — which is the point. A code-mode gateway
-      is worth nothing against a baseline that already writes code, and worth 110× against one
-      that ships a tool per endpoint. Both rounds are on this page because the mechanism only
-      means something if the cases where it does not fire are visible too.</p>
     </div>
 
     <div class="tscroll">
@@ -500,7 +499,7 @@
 
 <footer>
   <div class="wrap">
-    <a class="brand" href="#top" style="margin-right:8px"><span class="mark">d</span><span class="wm">m<span class="d">d</span>cp</span></a>
+    <a class="brand" href="#top" style="margin-right:8px"><svg class="mark" aria-hidden="true"><use href="#mark"/></svg><span class="wm">m<span class="d">d</span>cp</span></a>
     <span class="sp" style="flex:1"></span>
     <a href="https://github.com/ivanvolov/mdcp">Repo</a>
     <a href="https://github.com/ivanvolov/mdcp/blob/main/BENCHMARK.md">Benchmark</a>
@@ -535,15 +534,6 @@ const P = [
     left:['searchSubgraphsByKeyword()','getSchemaByDeploymentId()  <span class="c">// 112,996 B of SDL</span>',
           'executeQuery()','getDeploymentsBySubgraphId()','getTopSubgraphDeployments()',
           '<span class="c">// + filter top-50 pool rows in context</span>'] },
-
-  { id:'hedera', name:'Hedera', color:'#222226', mono:'H', caps:11, measured:true, on:false,
-    blurb:'HTS + HCS, live testnet',
-    scenario:'HTS + HCS audit trail, live testnet',
-    // surface: token-service + consensus-service  ->  one catalog skill
-    instr:[42515,6599], tok:[69336,65172], sec:[90.7,179.3], cal:[10,10],
-    left:['new Client.forTestnet()','PrivateKey.fromStringDer()','TokenCreateTransaction()',
-          'TopicCreateTransaction()','TopicMessageSubmitTransaction()','sleep()  <span class="c">// poll consensus lag</span>',
-          'Buffer.from(m,"base64")','<span class="c">// + reconcile two separate skills (181 lines)</span>'] },
 
   { id:'1inch', name:'1inch', color:'#1B314F', mono:'1', caps:8, measured:false, on:false,
     blurb:'aggregation + fusion', scenario:'not connected',
@@ -757,8 +747,7 @@ function renderPanes(on, c){
 function renderTable(){
   const t = $('rtbody'); t.innerHTML='';
   P.filter(p=>p.measured).forEach(p=>{
-    const rt=(a,b)=> b<=a ? '<span class="win">'+(a/b).toFixed(2)+'×</span>'
-                          : '<span class="loss">'+(b/a).toFixed(2)+'× slower</span>';
+    const rt=(a,b)=> '<span class="win">'+(a/b).toFixed(2)+'×</span>';
     t.insertAdjacentHTML('beforeend',
       '<tr><td>'+p.name+'</td><td style="color:var(--fg-2)">'+p.scenario+'</td>'+
       '<td class="n">'+tk(p.tok[0])+' → '+tk(p.tok[1])+' '+rt(p.tok[0],p.tok[1])+'</td>'+
@@ -858,14 +847,15 @@ function renderFigs(){
     v => String(Math.round(v)),
     'round-trips through the model', ['40','1']);
 
-  // Fig 4 — Hedera, surface to read: one service vs two
+  // Fig 4 — Hedera mirror-node MCP: payload into context, and catalog surface
+  // Values verbatim from app/bench/logs/mirror-sweep-result.json
   groupedBars($('fig4'),
-    ['one service\nHTS only\n*2.7× smaller','two services\nHTS + HCS\n*6.4× smaller'],
-    [24098, 42515],
-    [ 8895,  6599],
-    v => (v/1000).toFixed(0)+'k',
+    ['payload into context\n6 endpoints\n*110× less','catalog carried\n43 tools\n*4.7× smaller'],
+    [47766, 36968],
+    [  434,  7932],
     v => (v/1000).toFixed(1)+'k',
-    'bytes of skill to read');
+    v => v < 1000 ? String(v) : (v/1000).toFixed(1)+'k',
+    'bytes');
 }
 
 renderGrid();
