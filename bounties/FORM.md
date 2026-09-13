@@ -79,3 +79,148 @@ Two ways, and the second one is the project.
 Built with: Claude Code (Claude Opus) wrote most of the TypeScript under a normal review loop — I set the architecture and the invariants, read the diffs, and the benchmark harness caught what slipped through: two double-spend bugs in the transaction-intent idempotency design, and a planning pass that wrote local state so a DCA strategy read back its own dry run. The three sponsor integrations were built in parallel Claude Code sessions coordinating through the repo. Docs and the landing page were drafted the same way.
 
 Measured with: mdcp is infrastructure for AI agents, so every benchmark is an AI run. Each result in BENCHMARK.md is a fresh Claude Code agent handed one task and one of two tool surfaces — the protocol's own official skills or MCP server on one side, mdcp on the other — with no knowledge of the other arm. Agent tokens, wall clock, tool invocations and transcript payload bytes are recorded per run, and both agents' verbatim answers plus the raw logs ship in the repo, so every ratio can be recomputed from the evidence rather than taken on trust.
+
+---
+
+# Partner prizes
+
+Three prizes selected: Hedera, The Graph, Uniswap Foundation. Each needs a
+one-or-two-sentence "why applicable", one code link, an ease rating 1-10, and
+(for two of them) sponsor feedback. Links are pinned to commit `3f06235` so the
+line numbers stay correct no matter what lands later.
+
+## Hedera — $15,000
+
+**Why you're applicable:**
+
+mdcp puts Hedera's own services behind a code-mode agent interface: HTS and HCS
+are driven natively through the Hiero SDK on testnet, and Hedera's own
+`mirrornode-mcp-server` is mounted unmodified as an upstream so its 43 tools run
+inside the sandbox instead of in the model's context. Benchmarked against
+Hedera's own official artifacts rather than a strawman: on a six-endpoint
+portfolio-and-audit review the conventional shape pulls 47,766 bytes across 6
+round-trips, through mdcp it is 434 bytes in 1, and on a combined
+HTS-plus-HCS task the agent wrote 25 lines instead of 181 because one catalog
+covers both services. Live testnet trail: token 0.0.10521642, topic 0.0.10521641.
+
+**Link to the line of code:**
+
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/hedera.ts#L170-L260
+
+(native HTS + HCS writes through the Hiero SDK — token create, mint, associate,
+topic create, message submit. The mirror-node MCP upstream adapter is
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/hederaUpstream.ts#L123-L158 )
+
+**How easy is the API / protocol? — 6**
+
+The Hiero SDK itself is closer to a 9: one fluent transaction builder per
+service, receipts carry exactly what you need, automatic chunking on HCS
+messages over 1KB. The 6 is entirely the MCP server, below.
+
+**Additional feedback:**
+
+The Hiero SDK is the good part — the transaction builders are consistent across
+HTS and HCS, receipts return the ids you actually need, and messages over 1KB
+chunk themselves so a caller never handles it. Two things cost us real time.
+
+First, `hedera-dev/mirrornode-mcp-server` does not start from a clean clone:
+`fastmcp` pulls `zod-to-json-schema`, which imports the `zod/v3` subpath, while
+the repo pins `zod@3.24.2`, which predates that subpath. Second, once running,
+its SSE endpoint answers HTTP 500 "Error creating server" on every connection —
+reproduced with the repo's own pinned dependencies — so the 43 tools it defines
+are unreachable as shipped. We worked around it by serving the server's own
+`openApiZod.ts` definitions over stdio, leaving its files untouched, but a
+first-time integrator will read that 500 as their own mistake. A pinned
+lockfile and a smoke test in CI would close both.
+
+Smaller: the official agent suite splits HTS and HCS into separate skills, so
+any task spanning tokens and consensus means reading two documents (42,515
+bytes together) and hand-writing the reconciliation. One combined catalog would
+help agents more than two thorough ones. And the ~3s mirror-node lag after a
+write is real and correct, but it is not stated anywhere near the write path —
+an agent that reads back immediately gets a 404 and concludes its transaction
+failed.
+
+## The Graph — $15,000
+
+**Why you're applicable:**
+
+We mounted The Graph's own `subgraph-mcp` server (graphops, Apache-2.0)
+completely unmodified inside mdcp's sandbox — mdcp connects as an MCP client,
+discovers its 9 tools at runtime and re-exposes them as `graph.*`, so the same
+server and the same live gateway data run in both interaction shapes and the
+only variable is the shape. On a cross-protocol venue comparison built on
+Messari Standardized Subgraphs — one query pattern reused across 4 protocols on
+6 chains — that took 43 tool invocations down to 5 and 242KB of transcript
+payload down to 9.7KB at N=10, with schema SDL alone accounting for 69% of the
+baseline's context.
+
+**Link to the line of code:**
+
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/graphUpstream.ts#L108-L136
+
+**How easy is the API / protocol? — 8**
+
+`subgraph-mcp` started clean, spoke standard MCP, and needed nothing but a
+Studio key. The two points off are the schema-discovery cost and the
+data-quality traps below.
+
+**Additional feedback:**
+
+`subgraph-mcp` was the easiest of the three upstreams to integrate — it started
+from a clean clone, spoke plain MCP, and both the local binary and the hosted
+SSE bridge worked. The standardized Messari schema is the thing that actually
+pays: because the schema is shared and known, a program never has to fetch one,
+and in our measurements schema SDL was 69% of the baseline arm's entire context
+payload. That is a strong argument for standardization that we do not think is
+being made loudly enough in the docs.
+
+Two pieces of feedback. First, schema discovery is priced like a read but
+behaves like a download — for an agent, fetching an SDL is often more expensive
+than the query it enables. A way to ask "is this subgraph on a known standard,
+and which version" without pulling the SDL would cut a large fraction of agent
+context spend outright.
+
+Second, freshness is invisible at the point of use. Two of our agents
+independently flagged PancakeSwap's BSC snapshot as roughly 41 days stale, which
+made its top volume rank an artifact rather than a fact; another had to reason
+about a Curve pool reporting cumulative volume on the order of 10^24. Both are
+knowable from the data, but only if you think to look. A last-indexed-block or
+staleness field surfaced in the MCP response — rather than requiring a separate
+status query — would let a program quarantine bad rows instead of ranking them.
+
+## Uniswap Foundation — $5,000
+
+**Why you're applicable:**
+
+The Trading API is mdcp's Uniswap execution path — `check_approval` to `quote`
+to a Permit2 EIP-712 signature to `swap`, signed and broadcast host-side with
+`x-agent-info` attribution on every request — and we tested it by porting
+Uniswap's own `uniswap-ai` skills onto the gateway by changing only the
+delegation target (12 lines of 126 in `dca-bot`), then running fresh agents on
+identical tasks. Live on Sepolia through the production API: 1.42x fewer tokens
+and 2.3x faster across four operations; 2.81x fewer tokens and 11x faster on a
+3-leg index basket. The detailed developer feedback is in FEEDBACK.md, including
+two claims we withdrew after verifying them.
+
+**Link to the line of code:**
+
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/tradingApi.ts#L154-L200
+
+(check_approval to quote to Permit2 signature to /swap; the `x-agent-info`
+header with `integration_name: "mdcp"` is at
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/tradingApi.ts#L103-L105 )
+
+**How easy is the API / protocol? — 5**
+
+Routing and quoting are excellent and the request shapes are clear. The 5 is
+the gap between a quote and a confirmed transaction: there is no official
+executor, Permit2 signing is specified for request shape but not for the act of
+signing, and the documented Legacy approval path does not work as written. All
+reproduced in FEEDBACK.md.
+
+(If the form has a feedback box here too, the short version is: an official
+executor package or one blessed pattern; Permit2 errors decoded into the /swap
+response; one sentence saying the Permit2 nonce comes from live mainnet; a
+corrected Legacy snippet; and published token budgets per skill.
+https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md )
