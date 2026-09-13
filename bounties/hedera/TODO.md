@@ -43,7 +43,10 @@ form pasting) live in your head, not here.
 
 ## Outstanding
 
-- [ ] **Open the PR to `hedera-dev/mirrornode-mcp-server`.** This is the highest
+- [ ] **Open the PR to `hedera-dev/mirrornode-mcp-server`** — *operator task,
+      needs your explicit go-ahead.* It forks a third party's repo and opens a
+      public pull request under your GitHub identity, so no session opens it
+      without you saying so. This is the highest
       -leverage item left. It converts qualification requirement #1 from
       "arguably, via the new-harness arm" to unambiguous — the track says
       *"submit a meaningful contribution to the Hedera Harness (open PR, not
