@@ -172,6 +172,25 @@ Same task, same outcome, structurally different guarantees.
   non-interactive. The official skill's `AskUserQuestion` gate was therefore
   noted-but-skipped; mdcp's plan-approval gate actually executed (execute →
   plan → resume).
+- **The official arm was not given every lazily-loaded reference file, and we
+  found this after the runs.** `viem-integration/SKILL.md` links to six
+  `references/*.md` files (68,000 bytes) that were absent from the arm
+  directory, and the level-1 DCA arm was also missing
+  `swap-integration/references/advanced-patterns.md` (11,103 bytes) and
+  `references/robinhood-chain.md`. All of them are now vendored under
+  `skills/uniswap-official/`, so the repository is a complete copy of the
+  official suite and the gap is inspectable.
+
+  Which way this biases the result is worth stating rather than glossing:
+  those files are read on demand, not preloaded, so **their absence lowered the
+  official arm's token count** on any run where the agent would have opened
+  one — the headline ratios are therefore conservative in mdcp's favour on
+  tokens. The cost could have gone the other way on wall clock and on
+  correctness: an agent that could not open a reference may have spent time
+  rediscovering what it said. We did not rerun with the full set, so we cannot
+  quantify either direction, and we are not claiming the effect is negligible.
+  We are reporting it because a reader comparing our arm directory against
+  `skills/uniswap-official/` would notice it, and should not have to.
 
 ## 2. Where the round-trip effect lives (microbenchmarks)
 
