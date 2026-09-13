@@ -20,6 +20,19 @@ The strategy skill itself is the same size in both. The saving is entirely in
 what an agent must carry to *execute*, not in the strategy prompt — which is the
 point: mdcp replaces the execution layer, not the skill.
 
+## Reading these as a judge
+
+`mdcp-port/` skills are **frozen benchmark artifacts**: their byte sizes are
+cited in the results, so they are not edited for convenience after a run. That
+is why mounting instructions are not inside them — those live in
+[RUN.md §4](../RUN.md), together with the credential matrix and the per-track
+walkthroughs.
+
+`references/` holds the three shared reference files both suites link to as
+`../../references/*.md`. Uniswap's layout resolves that path; this repo's does
+not, so the files sit at the depth the links expect. Both arms resolve them the
+same way.
+
 ## Hedera — one catalog skill for every native service
 
 `hedera-official/` holds two skills copied verbatim from
