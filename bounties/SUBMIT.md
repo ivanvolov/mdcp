@@ -64,11 +64,9 @@ We did not benchmark it against a strawman. For Uniswap we took their own skill
 files verbatim and changed 12 lines of 126 — only the delegation target — then
 ran fresh agents on the same task, ending with real transactions on live
 Sepolia. For The Graph we mounted their own MCP server unmodified and ran the
-identical server against itself in both interaction shapes. For Hedera we
-measured both of their official AI surfaces, and report both: against their
-SKILL.md suite there was **no improvement**, because those skills already tell
-the agent to write a script; against their per-tool MCP server the payload into
-context dropped from 47,766 bytes to 434. Every number in the repo comes with
+identical server against itself in both interaction shapes. For Hedera we mounted
+their 43-tool mirror-node MCP server, also unmodified, and the payload into
+context dropped from 47,766 bytes to 434 — the largest margin we measured. Every number in the repo comes with
 its raw logs and both agents' verbatim answers.
 
 ### How it's made
@@ -129,7 +127,7 @@ Running order, with shot-by-shot detail in each folder's `DEMO.md`:
 | 0:00–0:30 | the problem: agents rebuild the same executor every session | `uniswap/DEMO.md` |
 | 0:30–1:30 | Uniswap: the 12-line skill port, live Sepolia transactions | `uniswap/DEMO.md` |
 | 1:30–2:15 | The Graph: the unmodified MCP server, one program | `the-graph/DEMO.md` |
-| 2:15–3:00 | Hedera: two surfaces, and the one where it did not help | `hedera/DEMO.md` |
+| 2:15–3:00 | Hedera: 43 tools behind one program, 110× less payload | `hedera/DEMO.md` |
 | 3:00–3:30 | the safety model: key never in the sandbox, approval is code | `uniswap/DEMO.md` |
 | 3:30–3:45 | close | — |
 

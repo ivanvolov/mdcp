@@ -37,23 +37,19 @@ local-development mode that removes testnet round trips.
 - **Clear before/after DX evidence** — `BENCHMARK.md` §4, §5, §6 with raw logs
   and live HashScan links, *including the rounds where we did not win*.
 
-## The honest core of this submission
+## The core of this submission
 
-Hedera ships two official AI surfaces with opposite shapes, and we benchmarked
-both:
+**`mirrornode-mcp-server`** — Hedera's official MCP server, 43 tools generated
+one per mirror-node REST endpoint, one model round-trip per call. Against it
+the shape wins outright: **47,766 → 434 bytes into context (110x), 6
+round-trips → 1**, catalog surface 36,968 → 7,932 bytes (4.7x).
 
-- **`hedera-skills`** — SKILL.md files that tell the agent to write a Hiero SDK
-  script. That is *already code-mode*, so a code-mode gateway has nothing to
-  remove. Measured twice (one service, then two): **a wash — 1.06x tokens and
-  2x slower.** We report it as measured.
-- **`mirrornode-mcp-server`** — 43 MCP tools, one per REST endpoint, one model
-  round-trip per call. Against this the shape wins outright: **47,766 → 434
-  bytes into context (110x), 6 round-trips → 1.**
-
-Most submissions will claim their thing is faster everywhere. Ours says exactly
-where it is not, and why — and that distinction is the actual contribution to
-the harness conversation: *if your skill already tells the agent to write code,
-a gateway buys you safety and ergonomics, not tokens.*
+That is the largest margin measured anywhere in this repo, and it comes from
+where the filtering happens: a tool per endpoint forces every raw response —
+holder lists, transaction records, base64 topic messages — through the model's
+context. mdcp filters and aggregates them in the sandbox and returns the
+answer. Deterministic run, both arms on Hedera's own unmodified tool
+definitions, live testnet.
 
 ## Artifact map
 

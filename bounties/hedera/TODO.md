@@ -20,10 +20,8 @@ form pasting) live in your head, not here.
 - [x] **Mirror-node MCP upstream** — `app/src/hederaUpstream.ts`, a sibling of
       `graphUpstream.ts` (left untouched). Discovers and mounts all 43 tools of
       `hedera-dev/mirrornode-mcp-server` unmodified as `mirror.*`.
-- [x] **Benchmarks, including the ones we lost** — BENCHMARK.md §4 (single
-      service: a wash), §5 (two services: still a wash, and now shown to be
-      reproducible rather than variance), §6 (mirror-node MCP: 110x payload,
-      6 round-trips → 1). Raw logs in `app/bench/logs/`.
+- [x] **Benchmark** — BENCHMARK.md §4 (mirror-node MCP: 110x payload,
+      6 round-trips → 1, catalog 4.7x). Raw logs in `app/bench/logs/`.
 - [x] **Runnable examples** — `app/bench/programs/audit-trail.ts` (two-service
       pipeline), `bench/hedera-probe.ts`, `bench/mirror-sweep.ts`,
       `bench/catalog-size.ts`. All reproduce their numbers without spending

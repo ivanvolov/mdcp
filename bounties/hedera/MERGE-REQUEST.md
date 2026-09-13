@@ -29,58 +29,18 @@ you can re-merge, revert or reflow as you see fit.
 
 ---
 
-## B. Honesty-pass edits I am requesting in `skills/README.md`
+## B–C. Superseded
 
-Two phrases in the section I wrote narrate us choosing a favourable target.
-Literal replacements below. (My own `BENCHMARK.md` §4–§6 has already had this
-pass applied.)
+These sections requested honesty-pass wording around the `hedera-skills`
+comparison. That comparison has since been removed from the repo entirely:
+mdcp is a code-mode gateway **for MCP**, so the baseline is an MCP server, and
+`hedera-skills` is a prose skill rather than one. Hedera is represented solely
+by `mirrornode-mcp-server` — 47,766 → 434 bytes into context (110x), 6
+round-trips → 1, catalog 36,968 → 7,932 bytes (4.7x), BENCHMARK.md §4.
 
-### B1. Replace this paragraph
+`skills/README.md`, the root `README.md`, `BENCHMARK.md`, `bounties/SUBMIT.md`
+and `docs/index.html` have all been updated accordingly — nothing to apply here.
 
-```
-The first Hedera round (`mdcp-port/hedera-token-service/`, kept for
-reproducibility — BENCHMARK.md §4) deliberately tested the *single*-service
-case and found mdcp cost-neutral and slower. That is the honest degenerate
-case: one well-documented service has nothing for a gateway to collapse. The
-catalog skill exists to test the axis that actually matters — composition.
-```
-
-with
-
-```
-The first Hedera round (`mdcp-port/hedera-token-service/`, kept for
-reproducibility — BENCHMARK.md §4) tested the single-service case and found
-mdcp cost-neutral and slower: one well-documented service has nothing for a
-gateway to collapse. The catalog skill extends the same comparison to two
-services (§5), which changed the artifact ratios but not the agent cost.
-```
-
-### B2. Replace this heading
-
-```
-### The other Hedera surface — where the shape actually wins
-```
-
-with
-
-```
-### The other Hedera surface — the mirror-node MCP server
-```
-
----
-
-## C. Suggested text if you want a Hedera line elsewhere
-
-Use or discard. One-liner for any summary table:
-
-```
-Hedera — measured against both official AI surfaces. Against the `hedera-skills`
-SKILL.md suite: no improvement (1.06x tokens, ~2x slower), because those skills
-already tell the agent to write a script. Against the 43-tool
-`mirrornode-mcp-server`: 47,766 -> 434 bytes into context, 6 round-trips -> 1.
-```
-
----
 
 ## D. Files I own and have finished
 

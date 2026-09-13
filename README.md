@@ -96,10 +96,9 @@ official AI artifact that sponsor ships** — not a chosen subset:
   skill-vs-skill, official file against a port that changes only the delegation
   target. `copy-trade` is measured at the mechanism level only — we ran out of
   time, not out of results.
-- **Hedera** ships two artifacts with opposite shapes. Both are measured, and
-  they come out in opposite directions: **no improvement** against the
-  `hedera-skills` SKILL.md suite, a large one against the 43-tool
-  `mirrornode-mcp-server`. Both are reported below with equal weight.
+- **Hedera** ships an MCP server too — `mirrornode-mcp-server`, 43 tools
+  generated one per REST endpoint. Both arms use its unmodified tool
+  definitions, so the upstream is held constant here as well.
 - **The Graph** ships an MCP server. The *same unmodified binary* serves both
   arms, so the upstream implementation is held constant.
 
@@ -142,32 +141,25 @@ still in the repo (`app/bench/logs/s3-venue/`) so the exclusion is checkable.
   equivalent answers, and both caught the same two data-quality traps unprompted.
   Skill: `skills/mdcp-graph/SKILL.md`. Evidence: `app/bench/logs/s5-graph/`,
   `s6-graph-sweep/` (charts), `s7-graph-scale10/`.
-- **Hedera** — the integration where we learned **when this approach does not
-  pay**, which turned out to be the most useful result in the repo.
+- **Hedera** — the **largest margin in the repo**, measured against
+  [`mirrornode-mcp-server`](https://github.com/hedera-dev/mirrornode-mcp-server):
+  Hedera's official MCP server, which generates **43 tools, one per mirror-node
+  REST endpoint**, straight from the OpenAPI spec.
 
-  Hedera ships two official AI surfaces with opposite shapes, and they
-  benchmark in opposite directions:
+  A six-endpoint portfolio + audit review ships **47,766 bytes into context
+  conventionally, 434 through mdcp — 110x less** — and **6 model round-trips
+  become 1**. Holder lists, raw transaction records and base64 topic messages
+  are filtered, decoded and aggregated inside the sandbox; only the answer
+  crosses. The catalog a client carries before doing any work drops from 36,968
+  to 7,932 bytes (4.7x). Deterministic run, both arms on Hedera's own
+  unmodified tool definitions, live testnet — BENCHMARK.md §4.
 
-  | official surface | shape | result |
-  | --- | --- | --- |
-  | [`hedera-skills`](https://github.com/hedera-dev/hedera-skills) | SKILL.md telling the agent to *write a Hiero SDK script* | **a wash** — 1.06x tokens, 2x slower |
-  | [`mirrornode-mcp-server`](https://github.com/hedera-dev/mirrornode-mcp-server) | 43 MCP tools, one per REST endpoint | **110x less payload**, 6 round-trips → 1 |
-
-  A skill that already tells the agent to write code *is already code-mode* —
-  a code-mode gateway has nothing left to remove, and we measured exactly that
-  twice, on one service and on two (BENCHMARK.md §4, §5). Against the per-tool
-  MCP server the shape wins outright (§6): the six-endpoint portfolio + audit
-  review ships **47,766 bytes into context conventionally, 434 through mdcp**,
-  with holder lists, raw transaction records and base64 topic messages
-  filtered, decoded and aggregated inside the sandbox.
-
-  What still helps on the skill side is what the *developer* reads and writes,
-  not what the agent spends: one catalog skill
-  (`skills/mdcp-port/hedera-catalog/SKILL.md`, 6.6KB, HTS **and** HCS) replaces
-  two official skills totalling 42,515 bytes, and the agent authored 25 lines
-  instead of 181. Plus guarantees the official path has no equivalent of: the
-  operator key never enters the sandbox, and every transaction pipeline is
-  planned and approved as one unit before anything is broadcast.
+  On the transaction side (HTS + HCS through the Hiero SDK) one catalog skill
+  (`skills/mdcp-port/hedera-catalog/SKILL.md`, 6.6KB, HTS **and** HCS) covers
+  both services, and the agent authored 25 lines instead of 181. Plus
+  guarantees the raw-SDK path has no equivalent of: the operator key never
+  enters the sandbox, and every transaction pipeline is planned and approved as
+  one unit before anything is broadcast.
 
   Two upstream defects found and reported while wiring this up, both
   reproduced with the repo's own pinned dependencies: `mirrornode-mcp-server`

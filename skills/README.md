@@ -40,57 +40,37 @@ walkthroughs.
 not, so the files sit at the depth the links expect. Both arms resolve them the
 same way.
 
-## Hedera — one catalog skill for every native service
+## Hedera — the mirror-node MCP server, and one catalog skill
 
-`hedera-official/` holds two skills copied verbatim from
-github.com/hedera-dev/hedera-skills @ 8b1fccd (`plugins/native-services-js`,
-Apache-2.0 — LICENSE included), evals included: the official skills ship their
-own benchmark prompts in `evals/spec.json`, which the bench reuses as scenarios.
-
-- `hedera-token-service` — 24,098 bytes (SKILL.md 11,517 + references 12,581)
-- `hedera-consensus-service` — 18,417 bytes (SKILL.md 11,279 + references 7,138)
-
-**`mdcp-port/hedera-catalog/` is the port, and it is one file for both.** That
-is the design claim: the official suite splits Hedera by service, so anything
-spanning tokens *and* consensus means reading two skills and writing one script
-that reconciles them. The catalog skill is a single self-contained surface —
-11 capabilities (`hts.*` + `hcs.*`), calling convention and approval flow
-included, no prerequisite skill to read separately.
-
-- official (both services): **42,515 bytes**
-- mdcp catalog: **~6.5KB, one file**
-
-The first Hedera round (`mdcp-port/hedera-token-service/`, kept for
-reproducibility — BENCHMARK.md §4) tested the single-service case and found
-mdcp cost-neutral and slower: one well-documented service has nothing for a
-gateway to collapse. The catalog skill extends the same comparison to two
-services (§5), which changed the artifact ratios but not the agent cost.
-
-All Hedera runs are level 3 (live testnet — these are native services, there is
-no fork to run them on). `app/bench/arm-hedera.sh` is the arm (gated by
-`HEDERA_TOOLS=1`, so the Uniswap and Graph catalogs are untouched);
-`app/bench/programs/audit-trail.ts` is the two-service pipeline — create a
-topic, create and mint a token, write an audit event per step, read the trail
-back — run with `bash bench/arm-hedera.sh execute @bench/programs/audit-trail.ts`.
-
-### The other Hedera surface — the mirror-node MCP server
-
-Hedera ships a *second* official AI artifact with the opposite shape:
-[mirrornode-mcp-server](https://github.com/hedera-dev/mirrornode-mcp-server)
-auto-generates **43 MCP tools**, one per mirror-node GET endpoint. That is
-per-tool MCP — one round-trip per call — not a script-writing skill, and it is
-where a code-mode gateway has something to remove.
+Hedera's MCP surface is
+[mirrornode-mcp-server](https://github.com/hedera-dev/mirrornode-mcp-server):
+it auto-generates **43 MCP tools**, one per mirror-node GET endpoint. That is
+per-tool MCP — one round-trip per call, every raw response through the model's
+context — which is exactly the shape a code-mode gateway removes.
 
 mdcp wraps it unmodified (`app/src/hederaUpstream.ts`, a sibling of
-`graphUpstream.ts`, which is left untouched) and re-exposes its tools inside
-the sandbox as `mirror.*`. Measured on an operator portfolio + audit review
-across six endpoints (BENCHMARK.md §6, deterministic, zero HBAR):
+`graphUpstream.ts`) and re-exposes its tools inside the sandbox as `mirror.*`.
+Measured on an operator portfolio + audit review across six endpoints
+(BENCHMARK.md §4, deterministic, zero HBAR):
 
 - payload into model context: **47,766 -> 434 bytes (110x)**, 6 round-trips -> 1
 - catalog surface: **36,968 -> 7,932 bytes (4.7x)**
 
-Both Hedera surfaces are reported: against a skill that already tells the agent
-to write code, no improvement; against a per-tool MCP server, 110x less payload.
+The gateway moves the filtering to where the data already is; only the answer
+crosses back.
+
+### Writes: one catalog skill for both native services
+
+`mdcp-port/hedera-catalog/` covers HTS **and** HCS in a single self-contained
+file — 11 capabilities (`hts.*` + `hcs.*`), calling convention and approval
+flow included, no prerequisite skill to read separately, ~6.5KB.
+
+All Hedera write runs are level 3 (live testnet — these are native services,
+there is no fork to run them on). `app/bench/arm-hedera.sh` is the arm (gated
+by `HEDERA_TOOLS=1`, so the Uniswap and Graph catalogs are untouched);
+`app/bench/programs/audit-trail.ts` is the two-service pipeline — create a
+topic, create and mint a token, write an audit event per step, read the trail
+back — run with `bash bench/arm-hedera.sh execute @bench/programs/audit-trail.ts`.
 
 ## The Graph
 

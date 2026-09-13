@@ -9,10 +9,10 @@
  * only variable is where the calls happen: through the model one at a time, or
  * inside the sandbox with only the aggregate returned.
  *
- * This is the surface §4/§5 could not measure. Those rounds benchmarked
- * hedera-skills, whose SKILL.md tells the agent to write a script — already
- * code-mode, so a code-mode gateway had nothing to remove. The mirror-node MCP
- * server is the other shape: one tool per endpoint, one round-trip per call.
+ * One tool per endpoint means one round-trip per call and every raw response
+ * through the model's context, so this is where the interaction-shape effect
+ * is largest. Deterministic — no agents, so no model variance, and every tool
+ * is a GET, so the whole benchmark costs zero HBAR.
  *
  * Run (from app/), with the upstream reachable:
  *   MIRRORNODE_MCP_BIN=<clone>/stdioServer.mjs npx tsx bench/mirror-sweep.ts

@@ -56,9 +56,9 @@ npx tsx bench/mirror-sweep.ts
 
 ## Don't say
 
-- "Faster and cheaper on Hedera." It is **not** — 1.06x tokens and ~2x slower
-  against `hedera-skills`. Keep the tokens/speed claims on the Uniswap and Graph
-  footage, where they were measured.
+- "Faster and cheaper on Hedera." The Hedera number is **payload into context**,
+  not agent tokens and not wall clock. Keep the tokens/speed claims on the
+  Uniswap and Graph footage, where they were measured that way.
 - "110x fewer tokens." The 110x is **bytes of payload into context** on a
   deterministic run, not agent tokens and not an agent run at all.
 

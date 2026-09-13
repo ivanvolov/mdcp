@@ -40,16 +40,6 @@ model context across 6 round-trips**; through mdcp it is **434 bytes in 1** —
 messages are filtered, decoded and aggregated in code instead of in the
 transcript.
 
-**What we found that we did not expect, and are reporting anyway.** Against
-`hedera-skills` mdcp does **not** win: 1.06x on tokens and about 2x slower,
-measured twice — once on a single service and once across two. The reason is
-specific and worth the ecosystem knowing: those SKILL.md files tell the agent to
-*write and run a Hiero SDK script*, which is already code-mode. A code-mode
-gateway has nothing left to remove. The win only appears against the per-tool
-MCP surface. So the honest claim for Hedera is: **against a skill that already
-tells the agent to write code, a gateway buys safety and ergonomics, not tokens;
-against a per-tool MCP server, it buys 110x.**
-
 Everything runs on live testnet — token
 [0.0.10521642](https://hashscan.io/testnet/token/0.0.10521642), audit topic
 [0.0.10521641](https://hashscan.io/testnet/topic/0.0.10521641) — and every

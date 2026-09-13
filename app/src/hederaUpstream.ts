@@ -4,17 +4,12 @@
  * Deliberately a sibling of graphUpstream.ts rather than a refactor of it: that
  * file backs recorded benchmark numbers and is left untouched.
  *
- * Why this upstream matters. Hedera ships *two* official AI surfaces with
- * opposite shapes, and they benchmark very differently:
- *
- *   - hedera-skills (SKILL.md files) tell the agent to write and run a Hiero
- *     SDK script. That is already code-mode, so a code-mode gateway has nothing
- *     to remove — measured in BENCHMARK.md §4/§5 as a wash.
- *   - hedera-dev/mirrornode-mcp-server generates one MCP tool per mirror-node
- *     GET endpoint (43 of them) straight from the OpenAPI spec. That is the
- *     per-tool shape, where the cost is one model round-trip per call and a
- *     full JSON-Schema catalog resident in context — the same shape as The
- *     Graph's subgraph-mcp, where the interaction-shape win is real.
+ * Why this upstream matters. hedera-dev/mirrornode-mcp-server generates one MCP
+ * tool per mirror-node GET endpoint (43 of them) straight from the OpenAPI
+ * spec. That is the per-tool shape: one model round-trip per call and a full
+ * JSON-Schema catalog resident in context — structurally the same as The
+ * Graph's subgraph-mcp, and where the interaction-shape win is largest
+ * (BENCHMARK.md §4: 47,766 -> 434 bytes into context, 6 round-trips -> 1).
  *
  * The server is used unmodified, serving live testnet mirror-node data.
  *

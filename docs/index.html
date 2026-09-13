@@ -424,7 +424,7 @@
           <span><i style="background:var(--bar-mdcp)"></i>MDCP</span>
         </div>
         <div id="fig4"></div>
-        <p class="src">BENCHMARK.md §6 · live Hedera testnet · deterministic run</p>
+        <p class="src">BENCHMARK.md §4 · live Hedera testnet · deterministic run</p>
       </div>
     </div>
 
@@ -437,7 +437,7 @@
       every raw response — holder lists, transaction records, base64 topic messages — through its
       context. mdcp filters and aggregates all of it in the sandbox and returns the answer.
       Deterministic run, both arms on Hedera's own unmodified tool definitions, live testnet:
-      <a href="https://github.com/ivanvolov/mdcp/blob/main/BENCHMARK.md">BENCHMARK.md §6</a>.</p>
+      <a href="https://github.com/ivanvolov/mdcp/blob/main/BENCHMARK.md">BENCHMARK.md §4</a>.</p>
     </div>
 
     <div class="tscroll">
@@ -572,11 +572,10 @@ const P = [
    The mdcp base is the most expensive of the selected single-protocol runs
    (conservative — it favours the baseline) plus a flat per-extra-protocol
    delta. Anchors: BENCHMARK.md §3, where the Graph arm grew 63.2k -> 71.0k
-   tokens for 3.3x the work while the baseline grew 73.2k -> 95.5k; the sweep,
-   which holds mdcp at one boundary crossing for every N; and §4, which
-   decomposes an mdcp run into ~22s of gateway work and ~165s of reading the
-   catalog and composing the program. That second part is the fixed cost, so a
-   second protocol adds lines to an existing program rather than another
+   tokens for 3.3x the work while the baseline grew 73.2k -> 95.5k; and the
+   sweep, which holds mdcp at one boundary crossing for every N. Reading the
+   catalog and composing the program is a fixed cost paid once, so a second
+   protocol adds lines to an existing program rather than another
    read-and-compose cycle.
 
    The verdict line compares this against the same protocols run as SEPARATE
