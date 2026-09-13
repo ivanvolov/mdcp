@@ -1,68 +1,13 @@
-# Submission form — draft answers
+# Submission form — The Graph
 
-Paste-ready text for the ETHGlobal form. Read it in your own voice before
+The bounty-specific answer, canonical here. Read it in your own voice before
 submitting; I wrote it, you are the one signing it.
 
-The general fields below (name / description / how it's made) were drafted here
-first. **The canonical version now lives in [`../SUBMIT.md`](../SUBMIT.md) §2**,
-extended to cover all three partner picks — paste from there. The **"how did you
-use The Graph"** answer is the bounty-specific one and is canonical here.
-
----
-
-## Project name
-
-**mdcp — a code-mode MCP gateway for on-chain agents**
-
-## Tagline (one line)
-
-One `execute` tool instead of a hundred tool schemas: agents write a small
-program, it runs in a sandbox next to the chain and the data, and only the
-answer reaches the model.
-
-## Description
-
-Agents talking to on-chain systems today burn most of their context on
-plumbing. Every protocol hands them tens of kilobytes of instructions and asks
-them to rebuild the same executor — clients, ABIs, signing, retries — from
-scratch, every session. Every tool call drags its full payload through the
-transcript, and the transcript is re-read on every turn.
-
-mdcp is that plumbing written once. It exposes three tools —
-`execute` / `resume` / `skills` — and runs the agent's program in a QuickJS
-sandbox with the integrations already mounted. Loops, conditionals, retries and
-discarded intermediate data stay next to the chain instead of in the model's
-context. Private keys never enter the sandbox; chain writes stop for operator
-approval as a code-enforced gate rather than a prompt instruction; and a
-resumed run replays already-landed transactions from an intent ledger instead
-of double-spending.
-
-We did not benchmark it against a strawman. For Uniswap we took their own skill
-files verbatim and changed 12 lines of 126 — only the delegation target — then
-ran fresh agents on the same task, ending with real transactions on live
-Sepolia. For The Graph we mounted their own MCP server unmodified and ran the
-identical server against itself in both interaction shapes. Every number in the
-repo comes with its raw logs and both agents' verbatim answers.
-
-## How it's made
-
-TypeScript MCP server (`@modelcontextprotocol/sdk`) over stdio. The sandbox
-wraps `@executor-js/runtime-quickjs` (MIT, from executor.sh) and adds what a
-chain gateway needs and a general code runner does not: a policy gate on every
-tool leaving the sandbox, suspend/resume around human approval, and tx-intent
-idempotency keyed on economic fields plus occurrence index. Chain access is
-viem against mainnet forks and live Sepolia; routing and calldata come from
-Uniswap's production Trading API, signed host-side.
-
-The Graph integration is a **generic MCP-upstream adapter**: mdcp connects to
-another MCP server as a client, discovers its tools at runtime, converts their
-JSON Schema into compact TypeScript signatures, and re-exposes them inside the
-sandbox. Upstream failures are returned as values rather than thrown, so a
-program sweeping ten subgraphs survives the two that are dead on the network.
-
-Benchmarking is instrumented at the call level — every invocation logs argument
-and result bytes, duration, and whether it crossed the model boundary — so the
-context claims are measured rather than estimated.
+The general project fields (name / tagline / description / how it's made) are
+**not** in this file — they live in [`../SUBMIT.md`](../SUBMIT.md) §2, in the
+version extended to cover all three partner picks. They were drafted here
+first and have since diverged, so a copy kept here would only be the stale one
+nearest to hand at the worst moment.
 
 ---
 
@@ -136,8 +81,9 @@ verbatim deliverables, and the methodology with its caveats stated.
   protocols × 6 chains on the Messari standardized schema, composing Subgraph
   MCP with Subgraphs, with the standards leverage measured rather than asserted.
 
-## Repo
+## Where a judge should read (if the form takes a pointer)
 
-https://github.com/ivanvolov/mdcp — MIT. Start at `README.md`, then
-`BENCHMARK.md` §3 for the Graph experiment, `bounties/the-graph/` for this
-bounty's paperwork.
+https://github.com/ivanvolov/mdcp — `skills/mdcp-graph/SKILL.md` to run it,
+`BENCHMARK.md` §3 for the experiment, `app/bench/logs/s5-graph/` +
+`s7-graph-scale10/` + `s8-graph-crosscategory/` for raw logs and both agents'
+verbatim answers.
