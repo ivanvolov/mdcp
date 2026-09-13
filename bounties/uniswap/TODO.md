@@ -12,8 +12,9 @@ Legend: **[you]** needs a human · **[claude]** I can do it · **[done]** shippe
       says a completed form *"that includes the link to your FEEDBACK.md file"*.
       Paste this link:
       `https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md`
-      Ready-to-paste summary answers are in `SUBMISSION.md` → "Feedback form".
-      I cannot do this one — it needs your logged-in session.
+      **Every field is pre-filled in `FEEDBACK-FORM.md`** — dropdowns, both
+      1-5 ratings, and all four text boxes, in the order the page shows them.
+      I cannot submit it; it needs your session.
 
 - [ ] **[you] Pick the 3 partner prizes** at submission. Uniswap is one
       candidate among four (see `../README.md`). Both Uniswap tracks belong to
