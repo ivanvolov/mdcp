@@ -6,31 +6,25 @@ Plain text, already within the field limits. Copy each block verbatim.
 
 ## Short description (max 100 chars)
 
-A new MCP standard for DeFi agents: up to 11x faster and a fraction of the tokens
-
-`81 characters.`
-
-Alternates:
-
-- `A new MCP standard for DeFi agents — far more token-efficient, and far faster to execute` (87)
-- `A new MCP standard for DeFi — cheaper in tokens, faster in execution, safer with keys` (84)
-- `A faster, cheaper MCP standard for DeFi agents` (45)
+A faster MCP standard for DeFi agents — far more token-efficient, and far faster in execution
 
 ---
 
 ## Description (min 280 chars)
 
-Agentic finance breaks on cost, not on ideas. An agent that trades runs a loop forever, and every turn of that loop pays twice: tokens, because the whole transcript is re-read, and seconds, because every step is a round-trip through the model. Spot a move, spend seven seconds acting on it, and you do not have a trading agent.
+Agentic finance today is agentic in name only. Almost everything that ships is a script — a strategy hard-coded in advance, with no model anywhere near the decision. Not because nobody wants autonomous agents, but because the standard way to give a model access to a chain, MCP, costs too many tokens and too much time per action to survive a loop.
 
-Outside crypto this already has a fix, and it is called code mode: stop handing the model a hundred tools to call one at a time, hand it a sandbox and let it write a program instead. Everything the program does stays inside the sandbox, and the model only ever sees what it returns. mdcp brings that to DeFi — where the loop never stops and the payload is money — on top of executor.sh's open-source sandbox runtime.
+And an agent that trades is a loop that never ends. It runs 24/7, so every cost inside it compounds: an inefficiency that looks trivial on a single call is your entire AI bill by the end of the month, and the strategy stops paying for itself long before it stops working.
 
-So the agent writes one small program. It runs in a sandbox sitting next to the chain, with Uniswap, The Graph and Hedera already mounted. The loop happens there. Quotes it rejected, pools it checked, balances it only needed for a comparison — none of it reaches the model. Only the answer does.
+Time is the harder wall. With today's official trading skills, getting from "make this trade" to a signed transaction averages around seven seconds, and seven is the good case. Worse, it degrades with complexity: the moment a strategy is more than a couple of calls, every intermediate result stays in the context window, the window grows, and each next step — including the trivial ones — takes longer than the last. We measured exactly that on Uniswap.
 
-Measured against each protocol's own official agent tooling: up to 2.8x fewer tokens, up to 11x faster, 15-25x less data crossing into context. Against Hedera's MCP server, 47,766 bytes became 434. The gap widens with the task — triple the work and our side stays flat while the conventional one triples.
+Use skills from more than one vendor together and it compounds again. Each brings its own tens of kilobytes of instructions and its own payloads into the same context, so running two protocols together costs more than running each apart.
 
-And because the program is code, the safety is code. Keys never enter the sandbox. The whole strategy is planned before anything is signed, and the operator approves the plan once rather than leg by leg. "Ask the user first" written in a prompt is not a control, and money needs a guarantee the model cannot talk its way around.
+For agents to actually operate in DeFi, a complex strategy has to execute in under a second and stay flat as it grows. That is the target mdcp is built against. Measured against the protocols' own official agent tooling, it cuts what reaches the model by 10x to 100x and wall-clock time by 1.5x to 11x — and, more importantly, the cost stops scaling with the strategy: triple the work and our side stays roughly flat.
 
-DeFi needs a standard for how agents touch it. This is a proposal for what it should be.
+The mechanism is code mode. Instead of calling tools one at a time, the agent writes one small program, and it runs in a sandbox sitting next to the chain with Uniswap, The Graph and Hedera already mounted. The loop happens there. Only the answer comes back. And because it is code, the safety is code too: keys never enter the sandbox, and the whole strategy is planned and approved once before anything is signed.
+
+DeFi needs its own standard for how agents touch it. This is a proposal for what it should be.
 
 ---
 
