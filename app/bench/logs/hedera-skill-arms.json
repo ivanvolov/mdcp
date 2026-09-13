@@ -1,0 +1,82 @@
+{
+  "what": "Agent-arm measurements for BENCHMARK.md §4 and §5 — official Hedera skills vs the mdcp port, live testnet.",
+  "provenance": "Recorded from the harness's per-agent usage accounting (tokens, tool_uses, duration) at the moment each arm finished, plus the structured JSON summary each agent emitted. The tool-call traces for the mdcp arms are in hedera-mdcp.jsonl; the on-chain results are independently verifiable on HashScan via the ids below. The official arms wrote their own scripts and therefore produced no mdcp bench log — their scripts are in app/bench/skill-arm-hedera/.",
+  "method": "Two fresh Claude Sonnet subagents per round, empty context, identical task prompt, run in parallel. The only difference is which skill directory each was pointed at. Both arms in both rounds produced equivalent on-chain outcomes.",
+  "caveat": "N=1 per round. Agent behaviour varies between runs; the direction of the effect reproduced across two independent tasks, but no ratio's second digit should be trusted.",
+  "rounds": [
+    {
+      "round": "single service (HTS only)",
+      "benchmark_section": "§4",
+      "task": "Create fungible token GameGold (GG, 8 decimals, 1,000,000 supply), transfer 500 to another account. Scenario taken from the official skill's own evals/spec.json, eval id 0.",
+      "official": {
+        "skills_read": ["hedera-official/hedera-token-service"],
+        "skill_surface_bytes": 24098,
+        "agent_tokens": 71296,
+        "tool_uses": 12,
+        "duration_ms": 88570,
+        "lines_of_code_authored": 106,
+        "bash_commands": 9,
+        "script_run_attempts": 1,
+        "script": "app/bench/skill-arm-hedera/create-and-transfer.mjs",
+        "token_id": "0.0.10521431",
+        "recipient_account_id": "0.0.10521432"
+      },
+      "mdcp": {
+        "skills_read": ["mdcp-port/hedera-token-service", "mdcp-port/mdcp-execute"],
+        "skill_surface_bytes": 8895,
+        "agent_tokens": 66348,
+        "tool_uses": 14,
+        "duration_ms": 186800,
+        "lines_of_code_authored": 0,
+        "bash_commands": 5,
+        "cli_invocations": 2,
+        "token_id": "0.0.10521424",
+        "recipient_account_id": "0.0.10521425"
+      },
+      "ratios": {
+        "agent_tokens": 1.07,
+        "wall_clock": 0.47,
+        "wall_clock_note": "below 1.0 means mdcp was slower — 2.11x",
+        "skill_surface": 2.71
+      }
+    },
+    {
+      "round": "two services (HTS + HCS)",
+      "benchmark_section": "§5",
+      "task": "Create an HCS audit topic, mint 500 GG into existing token 0.0.10521642, submit a JSON audit event recording the new total supply, read the topic back.",
+      "official": {
+        "skills_read": [
+          "hedera-official/hedera-token-service",
+          "hedera-official/hedera-consensus-service"
+        ],
+        "skill_surface_bytes": 42515,
+        "agent_tokens": 69336,
+        "tool_uses": 10,
+        "duration_ms": 90716,
+        "lines_of_code_authored": 181,
+        "bash_commands": 7,
+        "script_run_attempts": 1,
+        "script": "app/bench/skill-arm-hedera/audit-mint-and-log.mjs",
+        "topic_id": "0.0.10521689"
+      },
+      "mdcp": {
+        "skills_read": ["mdcp-port/hedera-catalog"],
+        "skill_surface_bytes": 6599,
+        "agent_tokens": 65172,
+        "tool_uses": 10,
+        "duration_ms": 179264,
+        "lines_of_code_authored": 25,
+        "bash_commands": 4,
+        "cli_invocations": 3,
+        "topic_id": "0.0.10521684"
+      },
+      "ratios": {
+        "agent_tokens": 1.06,
+        "wall_clock": 0.51,
+        "wall_clock_note": "below 1.0 means mdcp was slower — 1.98x",
+        "skill_surface": 6.44
+      }
+    }
+  ],
+  "shared_token_note": "Both arms of round 2 minted into token 0.0.10521642 in parallel, so supply moved 100,050,000,000,000 -> 100,100,000,000,000 (mdcp) -> 100,150,000,000,000 (official). Each arm's reported total reflects whichever mint had landed first. Sequencing, not disagreement."
+}

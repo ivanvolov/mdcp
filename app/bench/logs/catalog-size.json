@@ -1,0 +1,19 @@
+{
+  "what": "Catalog surface at two scales \u2014 BENCHMARK.md \u00a75. Produced by app/bench/catalog-size.ts.",
+  "runs": [
+    {
+      "tools": 24,
+      "perToolMcpBytes": 7074,
+      "mdcpSignatureBytes": 3397,
+      "ratio": 2.08,
+      "note": "mdcp still ships the signatures inside execute's description; the saving is schema overhead, not the catalog itself"
+    },
+    {
+      "tools": 33,
+      "perToolMcpBytes": 9263,
+      "mdcpSignatureBytes": 4247,
+      "ratio": 2.18,
+      "note": "mdcp still ships the signatures inside execute's description; the saving is schema overhead, not the catalog itself"
+    }
+  ]
+}

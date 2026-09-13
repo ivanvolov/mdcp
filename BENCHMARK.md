@@ -195,9 +195,9 @@ comparison against the official skill and we do not cite it as one.
 
 ## 3. The Graph: official Subgraph MCP vs the same server behind execute()
 
-The cleanest-controlled experiment in this repo: **both arms use The Graph's
-own `subgraph-mcp` server, unmodified** (graphops, Apache-2.0, built from
-source), serving every query live from the Graph gateway. The baseline agent
+**Both arms use The Graph's own `subgraph-mcp` server, unmodified** (graphops,
+Apache-2.0, built from source), serving every query live from the Graph
+gateway — so the upstream implementation is held constant by construction. The baseline agent
 calls its 9 tools the conventional way — one round-trip per call. The mdcp
 agent reaches the *same server* through one `execute()` program; mdcp connects
 to it as an MCP client and re-exposes its tools inside the sandbox
@@ -218,8 +218,8 @@ and both independently flagged the corrupted protocol-level TVL figures.
   (**15.7x less**); 39,611 bytes of searches, retries and pool lists ran
   inside the sandbox and never reached the model
 
-Where the baseline's context went: three GraphQL schema fetches were 112,810
-bytes — **70% of its transcript payload is SDL** read once and mostly unused —
+Where the baseline's context went: three GraphQL schema fetches were 112,996
+bytes — **69% of its transcript payload is SDL** read once and mostly unused —
 plus ~13 KB of raw top-50 pool rows per protocol filtered in-context, plus
 three empty searches paid at full round-trip price. The mdcp program skipped
 schema fetches entirely (the standardized Messari schema is the point of
@@ -236,7 +236,8 @@ across them):
 
 - agent tokens: 95,481 → 71,004 (**1.34x**, up from 1.16x)
 - wall clock: 479s → 154s (**3.1x**, up from 1.6x)
-- tool invocations: 43 → 5
+- agent tool invocations: 43 → 5 (mdcp calls crossing the boundary: 42 → 1;
+  the rest are the agent writing its program file)
 - transcript payload: 242,174 B → 9,670 B (**25.0x**, up from 15.7x)
 
 Every ratio grew. The mdcp arm is close to flat across the two sizes (63.2k →
@@ -266,9 +267,16 @@ identical deliverable both arms must write. Data, charts and caveats:
 
 ## 4. Hedera HTS: the official skill's own eval scenario, live on testnet
 
-Fourth surface, second ecosystem, and the only all-level-3 one: HTS is a
-native Hedera service, so there is no fork to run it on — every write here is
-a real consensus-node transaction on live testnet.
+**Scope of the Hedera rounds (§4–§6).** Hedera ships two official AI surfaces:
+the `hedera-skills` SKILL.md suite and the `mirrornode-mcp-server`. We
+integrated both and measured both, and all results are reported here — §4 and
+§5 against the skills, §6 against the MCP server. Two of the three rounds show
+no improvement.
+
+Every write in these rounds is a real consensus-node transaction on live
+testnet: HTS and HCS are native services, so there is no fork to run them on.
+Raw data: `app/bench/logs/hedera-skill-arms.json` (agent arms),
+`hedera-probe.jsonl`, `hedera-mdcp.jsonl`, `mirror-sweep-result.json`.
 
 The official artifact is `hedera-token-service` from `hedera-dev/hedera-skills`
 (vendored verbatim at `8b1fccd` under `skills/hedera-official/`): 24,098 bytes
@@ -358,14 +366,13 @@ ergonomics are the obvious suspect), not a settled measurement. The
 honest summary today is: on this task mdcp is cost-neutral, slower, and
 structurally safer.
 
-## 5. Does composition change the answer? (two Hedera services, one catalog)
+## 5. Two Hedera services, one catalog
 
-§4 tested one service and found mdcp cost-neutral and slower. The obvious
-objection is that this is the degenerate case: executor.sh's headline
-(1,640 tools ≈ 278,800 tokens -> 1 tool ≈ 1,044) is a *catalog-scaling* claim,
-so the advantage should appear only when many systems are joined. This round
-tests that directly, inside Hedera, by adding HCS (consensus topics) to the
-catalog and giving the task a genuine cross-service join.
+§4 tested one service and found mdcp cost-neutral and slower. executor.sh's
+headline (1,640 tools ≈ 278,800 tokens -> 1 tool ≈ 1,044) is a *catalog-scaling*
+claim, which predicts the advantage grows with the number of systems joined.
+This round tests that prediction inside Hedera, by adding HCS (consensus
+topics) to the catalog and giving the task a cross-service join.
 
 Task: create an HCS audit topic, mint 500 GG into an existing HTS token, write
 a JSON audit event recording the new total supply, read the topic back. The
@@ -398,7 +405,8 @@ variance** — which is what a single N=1 round could not establish.
 ### Why — and it is arithmetic, not opinion
 
 The catalog claim does not bite at our scale. Measured with
-`bench/catalog-size.ts`, what a per-tool MCP server would put in context versus
+`bench/catalog-size.ts` (log: `app/bench/logs/catalog-size.json`), what a
+per-tool MCP server would put in context versus
 what `execute` ships:
 
 - 24 tools (Hedera arm): 7,074 -> 3,397 bytes (2.1x)
@@ -419,25 +427,24 @@ key parsing, mirror-node URL construction, a `sleep()` helper to poll around
 consensus lag, and base64-decoding topic messages by hand. All of that is
 per-service work the catalog absorbs once.
 
-The honest reading: **mdcp's measurable win on Hedera is what the developer
-reads and writes, not what the agent spends.** The ~2x wall-clock cost is real
-and is the price of the approval gate (`execute` -> review -> `resume` is a
-round-trip the official skill never pays, because it has no enforced gate).
+Against `hedera-skills`, then, mdcp's measurable effect is on what the
+developer reads and writes, not on what the agent spends. The ~2x wall-clock
+cost is real and is the price of the approval gate (`execute` -> review ->
+`resume` is a round-trip the official skill never pays, because it has no
+enforced gate).
 
-## 6. Hedera again — against its *other* official surface, where the shape wins
+## 6. Hedera's mirror-node MCP server
 
-§4 and §5 measured mdcp against `hedera-skills` and found a wash. That result
-stands, and the reason turned out to be specific: those SKILL.md files tell the
-agent to **write and run a Hiero SDK script**. That is already code-mode, so a
-code-mode gateway has nothing to remove.
+§4 and §5 measured mdcp against `hedera-skills` and found a wash, because those
+SKILL.md files tell the agent to **write and run a Hiero SDK script** — already
+code-mode, leaving a code-mode gateway nothing to remove.
 
-Hedera ships a second official AI surface with the opposite shape:
+Hedera's second official AI surface has the opposite shape:
 [hedera-dev/mirrornode-mcp-server](https://github.com/hedera-dev/mirrornode-mcp-server)
 generates **one MCP tool per mirror-node GET endpoint** straight from the
 OpenAPI spec — 43 tools, one model round-trip per call, full JSON Schema
-catalog resident in context. That is the same shape as The Graph's
-subgraph-mcp, where the interaction-shape win is real. Benchmarking the wrong
-one of the two is what produced §4's wash.
+catalog resident in context. Structurally this matches The Graph's
+subgraph-mcp (§3).
 
 Both arms use Hedera's own tool definitions, unmodified, served live from
 testnet. Task: an operator portfolio + audit review — account state, tokens
@@ -467,8 +474,7 @@ not from schema elision.
 
 ### Two upstream defects found while wiring this up
 
-Both reproduced with the repo's own pinned dependencies, and both are worth a
-PR to the Hedera Harness track:
+Both reproduced with the repo's own pinned dependencies:
 
 1. **A clean clone does not start.** `fastmcp` pulls `zod-to-json-schema`,
    which imports the `zod/v3` subpath; the repo pins `zod@3.24.2`, which
@@ -480,7 +486,7 @@ PR to the Hedera Harness track:
    upstream files were not modified. The tools, schemas and descriptions
    measured above are theirs verbatim — only the transport is ours.
 
-### Caveats, honestly
+### Caveats
 
 - **Deterministic, not agent-driven.** This isolates interaction shape; it does
   not measure agent tokens or wall clock, so it is not comparable to §1's
