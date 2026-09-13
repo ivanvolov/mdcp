@@ -133,7 +133,15 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .p .cnt{font-family:var(--mono); font-size:10.5px; color:var(--fg-3); flex:none}
 
-  .notice{margin-top:14px; font-family:var(--mono); font-size:11.5px; color:var(--fg-3); display:none}
+  .notice{margin-top:14px; font-family:var(--mono); font-size:11.5px; line-height:1.5;
+    color:var(--warn); background:var(--warn-bg); border:1px solid var(--warn-line);
+    border-radius:9px; padding:10px 12px; display:none}
+  .prov{font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; border-radius:4px;
+    padding:1px 5px; border:1px solid currentColor; vertical-align:1px}
+  .prov.mea{color:var(--good)}
+  .prov.mod{color:var(--fg-3)}
+  .prov.ill{color:var(--warn); background:var(--warn-bg)}
+  .mnote{margin:8px 0 0; font-family:var(--mono); font-size:10.5px; line-height:1.5; color:var(--fg-3)}
   .notice.on{display:block}
 
   /* code panes */
@@ -271,6 +279,7 @@
           <div class="row mdcp"><span class="who"><i></i><span>M<span class="d">D</span>CP</span></span>
             <span class="track"><span class="val" id="v-instr-b"></span><span class="bar"><span id="b-instr-b"></span></span></span></div>
           <div class="verdict" id="r-instr"></div>
+          <p class="mnote" id="instr-note"></p>
         </div>
 
         <div class="meter">
@@ -304,6 +313,13 @@
         </div>
 
         <p class="model" id="model"></p>
+
+        <p class="model" style="border-top:0; padding-top:0; margin-top:14px">
+          <b>Measured, for contrast:</b> one server, four profiles — <b>76 capabilities behind 3 MCP
+          tools</b>. The always-loaded <code>execute</code> description is 12,966 B for all 76 and
+          2,600 B for Uniswap alone. Reproduce with <code>./mdcp surface &lt;profile&gt;</code>;
+          setup in <a href="https://github.com/ivanvolov/mdcp/blob/main/RUN.md">RUN.md</a>.
+        </p>
       </div>
 
       <!-- protocol grid -->
@@ -508,9 +524,11 @@ const P = [
   { id:'graph', name:'The Graph', color:'#6747ED', mono:'G', caps:9, measured:true, on:true,
     blurb:'subgraph-mcp, unmodified',
     scenario:'WETH/USDC venue comparison, 3 protocols',
-    // surface: 112,810 B of SDL the baseline fetched  ->  mdcp-graph skill
-    instr:[112810,7803], tok:[73240,63169], sec:[193,119], cal:[19,3],
-    left:['searchSubgraphsByKeyword()','getSchemaByDeploymentId()  <span class="c">// 112,810 B of SDL</span>',
+    surfaceNote:'The Graph’s official surface is GraphQL SDL fetched at runtime, not a skill file on disk — same axis, different kind of artifact.',
+    // surface: 112,996 B of SDL the baseline fetched  ->  mdcp-graph skill
+    // (SDL pulled at runtime, not a skill file on disk — see surfaceNote)
+    instr:[112996,7803], tok:[73240,63169], sec:[193,119], cal:[19,3],
+    left:['searchSubgraphsByKeyword()','getSchemaByDeploymentId()  <span class="c">// 112,996 B of SDL</span>',
           'executeQuery()','getDeploymentsBySubgraphId()','getTopSubgraphDeployments()',
           '<span class="c">// + filter top-50 pool rows in context</span>'] },
 
@@ -633,7 +651,7 @@ function chip(p){
 }
 
 // ── meters ─────────────────────────────────────────────────────────────────
-function setMeter(key, a, b, fmt, n, sep){
+function setMeter(key, a, b, fmt, n, sep, prov){
   const max = Math.max(a,b,1);
   $('v-'+key+'-a').innerHTML = '<b>'+fmt(a)+'</b>';
   $('v-'+key+'-b').innerHTML = '<b>'+fmt(b)+'</b>';
@@ -643,15 +661,16 @@ function setMeter(key, a, b, fmt, n, sep){
   const el = $('r-'+key);
   if (!a && !b){ el.textContent='—'; el.className='verdict'; return; }
   const r = a/b;
+  const tag = '<span class="prov '+prov.cls+'">'+prov.word+'</span>';
   if (r >= 1){
-    let s = r.toFixed(2)+'× less with MDCP';
+    let s = r.toFixed(2)+'× less with MDCP ' + tag;
     if (n > 1 && sep){
       const gain = r / (sep[0]/sep[1]);
-      s += ' <span class="delta">· '+gain.toFixed(2)+'× better than '+n+' separate runs</span>';
+      s += ' <span class="delta">· '+gain.toFixed(2)+'× vs '+n+' separate runs</span>';
     }
     el.innerHTML = s; el.className='verdict';
   } else {
-    el.innerHTML = (b/a).toFixed(2)+'× more with MDCP';
+    el.innerHTML = (b/a).toFixed(2)+'× more with MDCP ' + tag;
     el.className='verdict bad';
   }
 }
@@ -666,13 +685,22 @@ function update(){
       $('b-'+k+'-a').style.width='0'; $('b-'+k+'-b').style.width='0';
       $('r-'+k).textContent='—'; $('r-'+k).className='verdict';
     });
+    $('instr-note').textContent = '';
     $('model').textContent = 'Select a protocol to compare.';
   } else {
     const s = separate(on);
-    setMeter('instr', c.instr[0], c.instr[1], b=>kb(b)+' B',     c.n, s.instr);
-    setMeter('tok',   c.tok[0],   c.tok[1],   tk,                c.n, s.tok);
-    setMeter('sec',   c.sec[0],   c.sec[1],   secf,              c.n, s.sec);
-    setMeter('cal',   c.cal[0],   c.cal[1],   v=>nf(v)+' calls', c.n, s.cal);
+    // provenance rides on every figure: illustrative beats modelled beats measured
+    const prov = on.some(p=>!p.measured) ? {word:'illustrative', cls:'ill'}
+               : c.n > 1                 ? {word:'modelled',     cls:'mod'}
+                                         : {word:'measured',     cls:'mea'};
+    setMeter('instr', c.instr[0], c.instr[1], b=>kb(b)+' B',     c.n, s.instr, prov);
+    setMeter('tok',   c.tok[0],   c.tok[1],   tk,                c.n, s.tok,   prov);
+    setMeter('sec',   c.sec[0],   c.sec[1],   secf,              c.n, s.sec,   prov);
+    setMeter('cal',   c.cal[0],   c.cal[1],   v=>nf(v)+' calls', c.n, s.cal,   prov);
+
+    // artifact-kind caveats, attached to the meter they qualify
+    const notes = on.map(p=>p.surfaceNote).filter(Boolean);
+    $('instr-note').innerHTML = notes.join(' ');
 
     $('model').innerHTML = c.n === 1
       ? 'One protocol, one task. These are the <b>measured</b> figures from BENCHMARK.md — no modelling. '+
@@ -687,7 +715,9 @@ function update(){
 
   const off = on.filter(p=>!p.measured);
   const nt = $('notice');
-  if (off.length){ nt.classList.add('on'); nt.textContent = off.map(p=>p.name).join(', ')+' '+(off.length>1?'are':'is')+' not connected yet.'; }
+  if (off.length){ nt.classList.add('on'); nt.innerHTML = '<b>'+off.map(p=>p.name).join(', ')+'</b> '+(off.length>1?'are':'is')+
+      ' not connected yet. Every figure above is <b>illustrative</b> — a placeholder showing that the '+
+      'catalog extends, not a measurement of anything. Untick to return to benchmarked protocols.'; }
   else nt.classList.remove('on');
 
   renderPanes(on, c);
