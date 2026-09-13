@@ -162,6 +162,35 @@ async function runCode(code: string, options: RunOptions = {}) {
   const plan: PlannedIntent[] = [];
   const occurrences = new Map<string, number>();
 
+  /**
+   * Stub values handed out during planning (e.g. a tokenId for a token that
+   * does not exist yet).
+   *
+   * A *view* is side-effect free, so planning executes it for real — but a view
+   * whose input came from a planned write is being asked about an entity that
+   * does not exist, and answering it means a live lookup of "0.0.0-planned".
+   * The mirror node 400s and the whole planning pass dies. Tracking provenance
+   * (rather than sniffing for a magic string) lets such a view return its
+   * declared `planStub` instead of calling out.
+   */
+  const plannedValues = new Set<string>();
+
+  function rememberStub(stub: Record<string, unknown>) {
+    for (const v of Object.values(stub)) {
+      if (typeof v === "string") plannedValues.add(v);
+    }
+  }
+
+  /** Does any argument carry a value invented by the planning pass? */
+  function dependsOnPlanned(args: unknown): boolean {
+    if (typeof args === "string") return plannedValues.has(args);
+    if (Array.isArray(args)) return args.some(dependsOnPlanned);
+    if (args && typeof args === "object") {
+      return Object.values(args as Record<string, unknown>).some(dependsOnPlanned);
+    }
+    return false;
+  }
+
   const toolInvoker = {
     invoke: ({ path, args }: { path: string; args: unknown }) =>
       Effect.tryPromise({
@@ -191,6 +220,13 @@ async function runCode(code: string, options: RunOptions = {}) {
             return { ...(PLANNED_STUB as object), written: true };
           }
 
+          // A read about an entity the planning pass invented cannot be
+          // answered — serve the tool's declared shape so the program keeps
+          // running and the rest of the plan is still discovered.
+          if (planning && tool.sideEffect === "view" && dependsOnPlanned(args)) {
+            return { ...(tool.planStub ?? {}), planned: true };
+          }
+
           if (policyFor(tool) === "approve" && !approved.has(hash)) {
             if (!planning) {
               throw new Error(`not_approved: ${path} (${hash})`);
@@ -200,7 +236,9 @@ async function runCode(code: string, options: RunOptions = {}) {
             }
             // Tools whose receipts feed later calls (HTS: tokenId, accountId)
             // declare planStub fields so the planning pass keeps flowing.
-            return { ...PLANNED_STUB, ...(tool.planStub ?? {}) };
+            const stub = { ...PLANNED_STUB, ...(tool.planStub ?? {}) };
+            rememberStub(tool.planStub ?? {});
+            return stub;
           }
 
           const started = Date.now();
@@ -214,7 +252,9 @@ async function runCode(code: string, options: RunOptions = {}) {
             durationMs: Date.now() - started,
             ok: true,
           });
-          if (tool.sideEffect === "chain") ledger[hash] = result as object;
+          if (tool.sideEffect === "chain") {
+            ledger[hash] = { ...(result as object), __tool: path };
+          }
           return result;
         },
         catch: (error) => error,
@@ -232,6 +272,15 @@ export interface ExecuteOutcome {
   result?: unknown;
   logs?: string[];
   error?: string;
+  /**
+   * Transactions that DID land, reported even when the run later failed.
+   *
+   * Without this a program that swaps three legs and reverts on the second
+   * tells the caller only "it failed" — while the first leg's funds have
+   * already moved. An operator who cannot see what executed cannot decide what
+   * to do next, and an agent will happily retry the whole basket.
+   */
+  completed?: { tool: string; intentHash: string; result: unknown }[];
   approval?: {
     executionId: string;
     /** Every transaction the strategy wants to make, reviewed as one unit. */
@@ -305,8 +354,24 @@ export async function resume(
   }
 
   dropPending(executionId);
-  if (result.error) return { status: "error", error: result.error, logs: result.logs };
-  return { status: "ok", result: result.result, logs: result.logs };
+  if (result.error) {
+    return {
+      status: "error",
+      error: result.error,
+      logs: result.logs,
+      completed: settled(ledger),
+    };
+  }
+  return { status: "ok", result: result.result, logs: result.logs, completed: settled(ledger) };
+}
+
+/** Ledger entries, flattened for the caller. */
+function settled(ledger: Record<string, unknown>) {
+  return Object.entries(ledger).map(([intentHash, result]) => ({
+    tool: (result as any)?.__tool ?? "chain write",
+    intentHash,
+    result,
+  }));
 }
 
 /** Compact catalog handed to the model inside the `execute` description. */
