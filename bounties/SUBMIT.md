@@ -120,20 +120,6 @@ One recording, **2–4 minutes** (Hedera allows up to 5; the other two cap at 4,
 so stay under 4). **≥720p. Your own voice — AI voiceover is automatic
 rejection on the Uniswap and Graph tracks.**
 
-Running order, with shot-by-shot detail in each folder's `DEMO.md`:
-
-| time | beat | script |
-| --- | --- | --- |
-| 0:00–0:30 | the problem: agents rebuild the same executor every session | `uniswap/DEMO.md` |
-| 0:30–1:30 | Uniswap: the 12-line skill port, live Sepolia transactions | `uniswap/DEMO.md` |
-| 1:30–2:15 | The Graph: the unmodified MCP server, one program | `the-graph/DEMO.md` |
-| 2:15–3:00 | Hedera: 43 tools behind one program, 110× less payload | `hedera/DEMO.md` |
-| 3:00–3:30 | the safety model: key never in the sandbox, approval is code | `uniswap/DEMO.md` |
-| 3:30–3:45 | close | — |
-
-Pre-record checks: Hedera operator balance (a full pipeline costs ~14 testnet
-HBAR), and `./mdcp surface all` if you want the 76-capabilities shot.
-
 ---
 
 ## 5. What is still an operator task

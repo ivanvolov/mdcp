@@ -93,89 +93,6 @@ the FEEDBACK.md link goes inside the Uniswap applicability answer.
 
 ---
 
-## Uniswap Foundation — $5,000
-
-**Track:** Best Uniswap Stack Contribution (Classic / From Scratch).
-
-**Why you're applicable:**
-
-We built a new MCP standard for DeFi — one `execute` tool, the agent's program
-runs in a sandbox next to the chain — and ran Uniswap's own `uniswap-ai` skills
-on it, changing only the delegation target (12 lines of 126 in `dca-bot`). Same
-task, same Trading API, fresh agent each side:
-
-- index-bot, 3-leg basket: **180k → 64k tokens (2.81x), 738s → 67s (11.0x)**
-- dca-bot on the Trading API: **115k → 63k tokens (1.81x), 193s → 65s (3.0x)**
-- live Sepolia swap: **86k → 56k tokens, 145s → 57s (2.5x)**, four public txs
-
-Our side stays flat at ~55-64k tokens whether the task is a balance read or a
-3-leg basket; the official arm swings 60k-180k because it rewrites its own
-executor every session. Trading API integration is `check_approval` → `quote` →
-Permit2 → `swap`, signed host-side, `x-agent-info: integration_name "mdcp"` on
-every request. Detailed developer feedback, including two claims we withdrew
-after verifying them: https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md
-
-**Link to the line of code:**
-
-https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/tradingApi.ts#L154-L200
-
-**Ease of the API / protocol: 5**
-
-Routing and quoting are excellent. The 5 is the gap between a quote and a
-confirmed transaction: no official executor, Permit2 signing specified for
-request shape but never for the act of signing, and a documented Legacy
-approval path that reverts as written. All reproduced in FEEDBACK.md.
-
----
-
-## The Graph — $15,000
-
-**Track:** AI Tooling / AI Use Case (From Scratch), plus Composable or
-Standardized Graph Products.
-
-**Why you're applicable:**
-
-We built a new MCP standard for DeFi and mounted The Graph's own `subgraph-mcp`
-server inside it **unmodified** — mdcp connects as an MCP client, discovers its
-9 tools at runtime, re-exposes them in the sandbox. Same server, same live
-gateway data, both interaction shapes, so the only variable is the shape. Task:
-one Messari-standard query pattern across 4 protocols on 6 chains.
-
-- 10 targets: **43 → 5 tool calls, 242KB → 9.7KB transcript payload (25x),
-  479s → 154s (3.1x), 95k → 71k tokens**
-- 3 targets: 19 → 3 calls, 162KB → 10KB (15.7x)
-
-Every ratio grows with task size while our side stays near-flat — 63k → 71k
-tokens for 3.3x the work. Schema SDL alone was **69% of the baseline's entire
-context payload**, which is the standardized schema paying for itself.
-
-**Link to the line of code:**
-
-https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/graphUpstream.ts#L108-L136
-
-**Ease of the API / protocol: 8**
-
-**Additional feedback:**
-
-`subgraph-mcp` was the easiest of our three upstreams — clean clone, plain MCP,
-both the local binary and the hosted SSE bridge worked. Two things would help
-agents specifically.
-
-Schema discovery is priced like a read but behaves like a download: fetching an
-SDL is often more expensive than the query it enables. In our runs schema SDL
-was 69% of the baseline arm's whole context payload. A way to ask "is this
-subgraph on a known standard, and which version" without pulling the SDL would
-cut a large share of agent context spend outright.
-
-Freshness is invisible at the point of use. Two of our agents independently
-flagged PancakeSwap's BSC snapshot as ~41 days stale, which makes its top
-volume rank an artifact rather than a fact. It is knowable, but only if you
-think to look. A last-indexed-block or staleness field in the MCP response,
-instead of a separate status query, would let a program quarantine bad rows
-before ranking them.
-
----
-
 ## Hedera — $15,000
 
 **Track:** Open Source — Improve the Hedera Harness.
@@ -232,3 +149,86 @@ skills, so anything spanning tokens and consensus means reading two documents
 agents more than two thorough ones. And the ~3s mirror-node lag after a write
 is correct behaviour but is not stated anywhere near the write path — an agent
 that reads back immediately gets a 404 and concludes its transaction failed.
+
+---
+
+## The Graph — $15,000
+
+**Track:** AI Tooling / AI Use Case (From Scratch), plus Composable or
+Standardized Graph Products.
+
+**Why you're applicable:**
+
+We built a new MCP standard for DeFi and mounted The Graph's own `subgraph-mcp`
+server inside it **unmodified** — mdcp connects as an MCP client, discovers its
+9 tools at runtime, re-exposes them in the sandbox. Same server, same live
+gateway data, both interaction shapes, so the only variable is the shape. Task:
+one Messari-standard query pattern across 4 protocols on 6 chains.
+
+- 10 targets: **43 → 5 tool calls, 242KB → 9.7KB transcript payload (25x),
+  479s → 154s (3.1x), 95k → 71k tokens**
+- 3 targets: 19 → 3 calls, 162KB → 10KB (15.7x)
+
+Every ratio grows with task size while our side stays near-flat — 63k → 71k
+tokens for 3.3x the work. Schema SDL alone was **69% of the baseline's entire
+context payload**, which is the standardized schema paying for itself.
+
+**Link to the line of code:**
+
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/graphUpstream.ts#L108-L136
+
+**Ease of the API / protocol: 8**
+
+**Additional feedback:**
+
+`subgraph-mcp` was the easiest of our three upstreams — clean clone, plain MCP,
+both the local binary and the hosted SSE bridge worked. Two things would help
+agents specifically.
+
+Schema discovery is priced like a read but behaves like a download: fetching an
+SDL is often more expensive than the query it enables. In our runs schema SDL
+was 69% of the baseline arm's whole context payload. A way to ask "is this
+subgraph on a known standard, and which version" without pulling the SDL would
+cut a large share of agent context spend outright.
+
+Freshness is invisible at the point of use. Two of our agents independently
+flagged PancakeSwap's BSC snapshot as ~41 days stale, which makes its top
+volume rank an artifact rather than a fact. It is knowable, but only if you
+think to look. A last-indexed-block or staleness field in the MCP response,
+instead of a separate status query, would let a program quarantine bad rows
+before ranking them.
+
+---
+
+## Uniswap Foundation — $5,000
+
+**Track:** Best Uniswap Stack Contribution (Classic / From Scratch).
+
+**Why you're applicable:**
+
+We built a new MCP standard for DeFi — one `execute` tool, the agent's program
+runs in a sandbox next to the chain — and ran Uniswap's own `uniswap-ai` skills
+on it, changing only the delegation target (12 lines of 126 in `dca-bot`). Same
+task, same Trading API, fresh agent each side:
+
+- index-bot, 3-leg basket: **180k → 64k tokens (2.81x), 738s → 67s (11.0x)**
+- dca-bot on the Trading API: **115k → 63k tokens (1.81x), 193s → 65s (3.0x)**
+- live Sepolia swap: **86k → 56k tokens, 145s → 57s (2.5x)**, four public txs
+
+Our side stays flat at ~55-64k tokens whether the task is a balance read or a
+3-leg basket; the official arm swings 60k-180k because it rewrites its own
+executor every session. Trading API integration is `check_approval` → `quote` →
+Permit2 → `swap`, signed host-side, `x-agent-info: integration_name "mdcp"` on
+every request. Detailed developer feedback, including two claims we withdrew
+after verifying them: https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md
+
+**Link to the line of code:**
+
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/tradingApi.ts#L154-L200
+
+**Ease of the API / protocol: 5**
+
+Routing and quoting are excellent. The 5 is the gap between a quote and a
+confirmed transaction: no official executor, Permit2 signing specified for
+request shape but never for the act of signing, and a documented Legacy
+approval path that reverts as written. All reproduced in FEEDBACK.md.
