@@ -65,8 +65,8 @@ server.tool(
 
 server.tool(
   "skills",
-  "Read the calling convention, the policy model, or the signing model.",
-  { topic: z.enum(["execute", "policies", "signing"]) },
+  "Read the calling convention, the policy model, the signing model, or how to query The Graph.",
+  { topic: z.enum(["execute", "policies", "signing", "graph"]) },
   async ({ topic }) => {
     const { SKILLS } = await import("./skills.js");
     return { content: [{ type: "text", text: SKILLS[topic] ?? "unknown topic" }] };

@@ -34,9 +34,64 @@ no cached or mocked data anywhere on this path.
 
    ```bash
    cd app
-   bash bench/arm-graph-mdcp.sh execute '<program>'   # code mode
+   bash bench/arm-graph-mdcp.sh execute @bench/programs/dex-scan.ts   # code mode
    bash bench/arm-graph-baseline.sh help              # or call the 9 tools one by one
    ```
+
+   `execute` takes a program inline, as `{"code":"..."}`, or as `@path/to/file.ts`.
+   Prefer the file form for anything multi-line — shell quoting a TypeScript
+   program is its own failure mode.
+
+## Mounting it in an AI client
+
+The above is the benchmark harness. To actually *use* this from Claude Code,
+Claude Desktop, or Cursor, mount mdcp as an MCP server — three tools total
+(`execute` / `resume` / `skills`), with all 9 Graph capabilities reachable from
+inside `execute`:
+
+```json
+{
+  "mcpServers": {
+    "mdcp": {
+      "command": "npx",
+      "args": ["tsx", "/absolute/path/to/app/src/mcp-mdcp.ts"],
+      "env": {
+        "GRAPH_UPSTREAM": "1",
+        "GATEWAY_API_KEY": "<your Studio key>",
+        "SUBGRAPH_MCP_BIN": "<optional: path to the built binary>"
+      }
+    }
+  }
+}
+```
+
+Claude Code one-liner equivalent:
+
+```bash
+claude mcp add mdcp -e GRAPH_UPSTREAM=1 -e GATEWAY_API_KEY=<key> \
+  -- npx tsx /absolute/path/to/app/src/mcp-mdcp.ts
+```
+
+Then ask in natural language — *"compare WETH/USDC liquidity across Uniswap,
+Sushi and Curve"* — and the model writes one program instead of a dozen tool
+calls. `skills({topic:"graph"})` serves the query patterns and the data-quality
+rules on demand, so none of that sits in the always-loaded tool description.
+
+## Runnable examples
+
+Two programs in `app/bench/programs/`, both live against the gateway:
+
+- **`dex-scan.ts`** — the benchmarked task: 10 standardized subgraphs, 4
+  protocols across 6 chains, one query pattern, stale snapshots excluded from
+  the ranking and reported separately.
+- **`defi-scan.ts`** — the same pattern spanning protocol *categories*: DEX and
+  lending answered by one query, because Messari's base entities are shared
+  across types. Spans 5 schema versions (EXCHANGE 1.3.0/1.3.2/4.0.0/4.0.1 and
+  LENDING 3.1.0) in a single run.
+
+```bash
+bash bench/arm-graph-mdcp.sh execute @bench/programs/defi-scan.ts
+```
 
 ## Calling convention
 

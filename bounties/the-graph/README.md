@@ -112,6 +112,16 @@ the baseline's entire context payload** at N=3 (112,810 of 162,069 bytes). The
 standard is what turns "explore each protocol" into "loop the same query," and
 the sweep in `s6-graph-sweep/` plots exactly what that is worth as N grows.
 
+Stronger still: Messari's base entities (`protocols`,
+`financialsDailySnapshots`) are identical **across protocol types**, not just
+within one. `app/bench/programs/defi-scan.ts` runs a single query pattern
+across DEXes *and* lending markets — Uniswap V3, SushiSwap, Curve, PancakeSwap,
+Aave v2, Aave v3, Compound III — spanning **five schema versions** (EXCHANGE
+1.3.0 / 1.3.2 / 4.0.0 / 4.0.1 and LENDING 3.1.0) on six chains in one run, and
+producing a cross-category TVL ranking that is only meaningful because the
+field means the same thing in both schemas. Evidence:
+`app/bench/logs/s8-graph-crosscategory/`.
+
 ## Results
 
 Same unmodified official server on both sides, live gateway, Claude Sonnet
@@ -138,7 +148,11 @@ cost 4N round-trips instead of 1.
 Code:
 - `app/src/graphUpstream.ts` — the MCP-upstream adapter (the actual contribution)
 - `app/src/tools.ts` — `registerTools()`, late registration for discovered tools
-- `skills/mdcp-graph/SKILL.md` — the judges-can-run-it skill
+- `app/src/skills.ts` — the `graph` topic, served lazily via `skills({topic})`
+- `skills/mdcp-graph/SKILL.md` — the judges-can-run-it skill, incl. the
+  `mcpServers` config for mounting mdcp in Claude Code / Desktop / Cursor
+- `app/bench/programs/dex-scan.ts` — the benchmarked task, runnable
+- `app/bench/programs/defi-scan.ts` — cross-category (DEX + lending) pattern
 - `app/bench/arm-graph-baseline.sh` / `arm-graph-mdcp.sh` — the two arms
 - `app/bench/graph-sweep.ts` — deterministic scaling sweep
 
@@ -146,8 +160,13 @@ Evidence:
 - `app/bench/logs/s5-graph/` — N=3 agent run: raw JSONL, both verbatim answers, RESULTS.md
 - `app/bench/logs/s6-graph-sweep/` — sweep CSV/JSON + `chart.html` (slide-ready)
 - `app/bench/logs/s7-graph-scale10/` — N=10 agent run, same structure as s5
+- `app/bench/logs/s8-graph-crosscategory/` — cross-category run + output.json
 - `BENCHMARK.md` §3 — the write-up
 - `skills/README.md` — why The Graph's case is structurally different from Uniswap's
+
+Try it in one command (after the two `.env` lines in the skill):
+
+    cd app && bash bench/arm-graph-mdcp.sh execute @bench/programs/defi-scan.ts
 
 Upstream we depend on (both Apache-2.0, unmodified):
 - `graphops/subgraph-mcp` — built from source, run over stdio

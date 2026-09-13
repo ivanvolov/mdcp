@@ -103,7 +103,23 @@ Both agents also independently caught two data-quality traps — PancakeSwap
 BSC's snapshot being ~41 days stale, so its top volume rank is an artifact
 rather than a fact, and Curve's top pool reporting cumulative volume on the
 order of 10^24 — which is the kind of reasoning-about-data the track asks for,
-rather than printing query results.
+rather than printing query results. We then moved that judgment into code:
+`bench/programs/defi-scan.ts` quarantines stale and implausible values before
+ranking, so the model receives a clean ranking plus a named list of what was
+excluded and why, instead of raw rows it has to audit itself.
+
+Because Messari's base entities are shared **across protocol types** and not
+just within one, that same program runs a single query pattern over DEXes *and*
+lending markets — Uniswap V3, SushiSwap, Curve, PancakeSwap, Aave v2, Aave v3,
+Compound III — spanning five schema versions (EXCHANGE 1.3.0/1.3.2/4.0.0/4.0.1
+and LENDING 3.1.0) across six chains in one run, and ranks them together on a
+TVL field that means the same thing in every one of them.
+
+mdcp also mounts as a normal MCP server in Claude Code, Claude Desktop or
+Cursor (config in the skill), so all nine Graph capabilities are reachable from
+natural language through a three-tool surface, with the query patterns and
+data-quality rules served on demand via `skills({topic:"graph"})` rather than
+occupying the always-loaded description.
 
 Everything is reproducible: `skills/mdcp-graph/SKILL.md` is the setup and
 calling convention (a Studio API key and either a locally built binary or the

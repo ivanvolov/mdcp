@@ -1,87 +1,82 @@
-# TODO — The Graph submission
+# TODO — The Graph
 
-Deadline target: **11:00 EDT, Sun 2026-09-13** (hard cutoff 11:59; the plan is
-to submit at 11:00, not to race the wire).
+Build items for this bounty only. Everything here is code or docs in the repo;
+event logistics (track picks, video, form pasting) live in your head, not here.
 
-Legend: **[you]** needs a human · **[claude]** I can do it · **[done]** shipped.
+## Built
 
-## Blocking — must be true to submit
+- [x] **MCP-upstream adapter** — `app/src/graphUpstream.ts`. Connects to the
+      official `graphops/subgraph-mcp` as an MCP client, discovers its 9 tools
+      at runtime, generates compact TS signatures from their JSON Schema, and
+      re-exposes them in the sandbox as `graph.*`. Generic: a tenth upstream
+      tool appears with no code change.
+- [x] **Errors as values** — upstream GraphQL and MCP protocol failures return
+      `{ok:false, error}` into the program instead of throwing. Required, not
+      cosmetic: subgraph health on the network changes hour to hour, and a
+      throw kills the whole sweep.
+- [x] **Benchmark, N=3 and N=10** — `s5-graph/`, `s7-graph-scale10/`. Same
+      unmodified server both arms, live gateway, Sonnet agents, equivalent
+      answers. Every ratio grows with N (1.16x → 1.34x tokens, 1.6x → 3.1x
+      wall clock, 15.7x → 25.0x payload).
+- [x] **Deterministic scaling sweep + charts** — `app/bench/graph-sweep.ts`,
+      `s6-graph-sweep/` with `chart.html` rendered and verified in both themes.
+- [x] **Cross-category demo** — `app/bench/programs/defi-scan.ts`, evidence in
+      `s8-graph-crosscategory/`. One query pattern spanning DEX *and* lending,
+      five schema versions, six chains, with stale and implausible values
+      quarantined in code before ranking. This is the strongest form of the
+      Track 1 standardization argument and it did not exist before today.
+- [x] **Runnable programs** — `dex-scan.ts` reproduces the benchmarked task
+      without spending model tokens; `defi-scan.ts` is the cross-category one.
+      Both take `execute @path/to/file.ts`, so no shell-quoting a program.
+- [x] **Mountable in a real AI client** — the bounty rewards making The Graph
+      easier to use *from Claude/Cursor*, and nothing documented how to mount
+      mdcp. `skills/mdcp-graph/SKILL.md` now carries the `mcpServers` JSON and
+      the `claude mcp add` one-liner; verified the server serves all 9 Graph
+      capabilities inside a 3,450-byte `execute` description.
+- [x] **`skills({topic:"graph"})`** — query patterns and the four data-quality
+      rules, served lazily (2,373 bytes) so they never sit in the always-loaded
+      tool description. Registered in the topic enum and verified over MCP.
+- [x] **No-Rust path verified** — with `SUBGRAPH_MCP_BIN` unset, mdcp bridges to
+      the hosted SSE service via `npx mcp-remote` and live queries return real
+      data. The SKILL.md quickstart is not a trap for a judge without cargo.
+- [x] **Paperwork** — `README.md` (requirement → evidence map), `SUBMISSION.md`
+      (form answers), `DEMO.md` (the 45-second beat).
 
-- [ ] **[you] Pick the 3 partner prizes.** ETHGlobal allows three selections per
-      project and we have four candidates: Uniswap, The Graph Track 1
-      (Standardized), The Graph Track 2 (AI / From Scratch), Hedera. Both Graph
-      tracks are separately eligible and separately judged, so taking both is
-      legitimate — it just spends two of three slots. My read: **Track 2 is the
-      stronger claim** (the adapter is exactly the "AI tooling that targets The
-      Graph's products" the text describes), **Track 1 is the less crowded one**
-      and our standardized-schema evidence is unusually concrete. Decide against
-      the Uniswap and Hedera claims, not in isolation.
+## Worth building if time survives
 
-- [ ] **[you] Record the demo video** — 2–4 min, ≥720p, **human voice**
-      (AI voiceover is an automatic rejection). Beat sheet with what to show and
-      say: `DEMO.md`. The Graph segment is ~45 seconds of it.
+- [ ] **Upstream issue on `graphops/subgraph-mcp`** proposing a code-mode
+      `execute` tool, citing our measured numbers. ~1h. Reads as contributing
+      to the ecosystem rather than extracting from it, and we genuinely believe
+      it. Does **not** move us to the Continuity pool — it is a contribution we
+      point at, not the project's identity.
+- [ ] **A second cross-category axis** — the Messari base entities also cover
+      YIELD/vaults, which is where the track text's ERC-4626 hint points. One
+      more `kind` in `defi-scan.ts` if a healthy standardized vault subgraph
+      exists. Cheap to try, and a third category makes "the pattern generalizes"
+      harder to dismiss as a two-point coincidence.
 
-- [ ] **[you] Paste the submission form answers** from `SUBMISSION.md` (drafted,
-      needs your voice-check and the final track picks).
+## Deliberately not built
 
-- [x] **[done]** Public repo — https://github.com/ivanvolov/mdcp, everything
-      pushed, MIT, all work inside the event window.
+- **Anything named `dex_compare` / `lending_compare`.** Shipping a tool per
+  use-case would rebuild the exact anti-pattern mdcp exists to remove. The
+  primitives are `graph.*`; the comparison is a program the agent writes, and
+  the two files in `bench/programs/` are examples, not fixed capabilities.
+- **A fork of `subgraph-mcp`.** Both benchmark arms run the *same unmodified
+  binary* — that is what makes the experiment readable. Forking it would
+  destroy the control and gain nothing.
+- **Substreams anything.** Not touched, not claimed.
 
-- [x] **[done]** Judges-can-run-it doc — `skills/mdcp-graph/SKILL.md`.
+## Standing risks
 
-- [x] **[done]** Live-data requirement — every Graph query hits
-      `gateway.thegraph.com` with a Studio key; no mocks, no cache, no fixtures.
-
-## Should do — materially strengthens the submission
-
-- [x] **[done] The Graph has real estate in the root README.** The Integrations
-      entry now carries the adapter framing, the N=3 vs N=10 table, the
-      schema-SDL finding, and pointers to the skill and all three log dirs.
-
-- [x] **[done] No-Rust path verified end-to-end.** With `SUBGRAPH_MCP_BIN`
-      unset, mdcp bridges to the hosted SSE service via `npx mcp-remote` and
-      live queries return real data (Uniswap V3 schemaVersion 4.0.0,
-      dailyVolumeUSD 106,487,875). The SKILL.md quickstart is not a trap for a
-      judge without a Rust toolchain. Note our own `.env` points
-      `SUBGRAPH_MCP_BIN` at a session scratchpad path that will be
-      garbage-collected — harmless, since the fallback works.
-
-## Nice to have — only if time survives
-
-- [ ] **[claude] Open an upstream issue on `graphops/subgraph-mcp`** proposing a
-      code-mode `execute` tool, citing our measured numbers. Costs an hour,
-      reads as ecosystem contribution rather than extraction, and is honest —
-      we genuinely think their 9 tools would benefit. Does **not** move us to
-      the Continuity pool; it is a contribution we point at, not our project's
-      identity.
-
-- [ ] **[claude] Chart polish for slides** — `s6-graph-sweep/chart.html` is
-      rendered and checked in both themes. Only revisit if you want a different
-      framing (e.g. bytes instead of tokens on the left axis).
-
-## Explicitly not doing
-
-- **Continuity track (Track 3)** — requires the project to *be* an extension of
-  an existing repo. mdcp is net-new; claiming otherwise would be false.
-- **Featured Substreams challenge** — prompt → deployed Substreams pipeline. We
-  never touched Substreams. Not claimed anywhere in the submission.
-- **Moving Graph artifacts into this folder** — the code and logs are shared
-  with the Uniswap and Hedera claims; `README.md` here carries an artifact map
-  instead. Re-pathing files hours before a deadline breaks more than it tidies.
-
-## Open risks
-
-- **N=1 per configuration.** Two agent runs (N=3, N=10) per arm, not a
-  distribution. The *direction* is consistent across both sizes and matches the
-  deterministic sweep, but no single ratio's second digit should be trusted.
-  Stated plainly in every RESULTS.md; keep it stated in the video too — the
-  benchmark's credibility is the submission's main asset.
+- **N=1 per configuration.** Two agent runs per arm, not a distribution. The
+  direction is consistent across both task sizes and matches the deterministic
+  sweep; no single ratio's second digit should be trusted. Stated in every
+  RESULTS.md.
 - **The 1,238x sweep figure is a cost model, not a measurement.** It models an
-  agent re-reading its transcript each turn. Always cite it next to the measured
-  1.16x/1.34x, never alone. If a judge thinks we passed off a model as a
-  measurement, the whole benchmark loses its standing.
-- **Subgraph health drifts.** PancakeSwap Ethereum, Balancer V2, Camelot,
-  QuickSwap and Aerodrome were all dead on the network at probe time (no
-  allocations / indexing errors), and the ten we use could drift too. If a judge
-  reruns next week and one target fails, the program's error-as-data path skips
-  it — but the numbers will not reproduce exactly. Worth one sentence if asked.
+  agent re-reading its transcript each turn. Never cite it without the measured
+  1.16x/1.34x beside it — if it reads as a measurement passed off as one, the
+  whole benchmark loses standing.
+- **Subgraph health drifts within hours.** Four Uniswap V3 deployments went
+  healthy → "no allocations" between scenario 7 and the `dex-scan.ts` run on
+  the same morning. Programs degrade gracefully, but reruns will not reproduce
+  the same row set. Documented in `s8-graph-crosscategory/RESULTS.md`.
