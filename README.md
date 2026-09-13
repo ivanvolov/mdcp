@@ -1,297 +1,199 @@
-# mdcp — a code-mode MCP gateway for DeFi
+# ETHGlobal form — paste-ready text
 
-**Agents shouldn't re-invent the hands of every protocol they touch.**
+Plain text, already within the field limits. Copy each block verbatim.
 
-Uniswap's Trading API is a brain: it routes, quotes, and builds calldata. It has
-no hands — nothing signs, broadcasts, waits for receipts, tracks allowances, or
-stops a retry from spending twice. So the official Uniswap AI skills hand an
-agent 70KB of instructions and ask it to build that executor itself, from
-scratch, every session. Every other DeFi protocol does the same thing with its
-own 70KB.
+---
 
-mdcp is the hands, written once: **one `execute` tool that runs a whole strategy
-as a sandboxed program**, with signing, approval gating and replay protection
-enforced in code rather than described in prose.
+## Short description (max 100 chars)
 
-    ./mdcp execute 'const q = await tools["uniswap.apiQuote"]({tokenIn:"USDC", tokenOut:"WETH", amountIn:"25000000"});
-                    if (BigInt(q.amountOut) < minAcceptable) return {skipped:"price"};
-                    return await tools["uniswap.apiSwap"]({tokenIn:"USDC", tokenOut:"WETH", amountIn:"25000000"});'
+A faster MCP standard for DeFi agents — far more token-efficient, and far faster in execution
 
-One round-trip. The loop, the conditionals and the discarded intermediate data
-stay next to the chain instead of in the model's context.
+---
 
-## Does it actually help?
+## Description (min 280 chars)
 
-We didn't benchmark mdcp against a strawman. We took Uniswap's **own** skill
-files verbatim, ported the strategy skill to mdcp by changing **12 lines of
-126** — only the delegation target — and gave fresh agents the same task.
+Agentic finance today is agentic in name only. Almost everything that ships is a script — a strategy hard-coded in advance, with no model anywhere near the decision. Not because nobody wants autonomous agents, but because the standard way to give a model access to a chain, MCP, costs too many tokens and too much time per action to survive a loop.
 
-    diff skills/uniswap-official/dca-bot/SKILL.md skills/mdcp-port/dca-bot/SKILL.md
+And an agent that trades is a loop that never ends. It runs 24/7, so every cost inside it compounds: an inefficiency that looks trivial on a single call is your entire AI bill by the end of the month, and the strategy stops paying for itself long before it stops working.
 
-The strategy prompt is identical. What changes is that `swap-integration` +
-`viem-integration` (70,117 bytes of "here's how to build an executor") become
-`mdcp-execute` (4,219 bytes of "here are the functions").
+Time is the harder wall. With today's official trading skills, getting from "make this trade" to a signed transaction averages around 5 seconds, and it is the good case. Worse, it degrades with complexity: the moment a strategy is more than a couple of calls, every intermediate result stays in the context window, the window grows, and each next step — including the trivial ones — takes longer than the last. We measured exactly that on Uniswap.
 
-We then ran it at three levels of realism:
+Use skills from more than one vendor together and it compounds again. Each brings its own tens of kilobytes of instructions and its own payloads into the same context, so running two protocols together costs more than running each apart.
 
-| level | chain | Uniswap API | result |
-| --- | --- | --- | --- |
-| 1 | mainnet fork | on-chain contracts | 1.2–1.4x fewer tokens, 1.5–1.8x faster |
-| 2 | mainnet fork | production Trading API | 1.81x fewer tokens, 3.0x faster |
-| 3 | **live Sepolia** | **production Trading API** | **1.42x fewer tokens, 2.3x faster** |
+For agents to actually operate in DeFi, a complex strategy has to execute in under a second and stay flat as it grows. That is the target mdcp is built against. Measured against the protocols' own official agent tooling, it cuts what reaches the model by 10x to 100x and wall-clock time by 1.5x to 11x — and, more importantly, the cost stops scaling with the strategy: triple the work and our side stays roughly flat.
 
-**Level 3 is the one that counts** — real public testnet, real API, a fresh
-agent per operation, four transactions anyone can open on Etherscan:
+The mechanism is code mode. Instead of calling tools one at a time, the agent writes one small program, and it runs in a sandbox sitting next to the chain with Uniswap, The Graph and Hedera already mounted. The loop happens there. Only the answer comes back. And because it is code, the safety is code too: keys never enter the sandbox, and the whole strategy is planned and approved once before anything is signed.
 
-- quote 25 USDC→WETH — 86,474 → 54,683 tokens, 47s → 21s
-- wallet balances — 60,168 → 55,124 tokens, 62s → 31s
-- swap 25 USDC→WETH — 85,794 → 55,965 tokens, 145s → 57s
-  ([official](https://sepolia.etherscan.io/tx/0x868d375e517ba510c80d0479990ddef0a2b38d2e27a0d7b1e1afa93643bbd598) · [mdcp](https://sepolia.etherscan.io/tx/0xeb1b2c71c5dd6aeddf3069ce006e6549300645699091fe0a5f813a0d07d93a10))
-- swap 0.002 WETH→USDC — 83,066 → 56,366 tokens, 109s → 49s
-  ([official](https://sepolia.etherscan.io/tx/0x1124815a81bc13e5f05c7d6685962f3ab20e5156151b77f8dec40cf23fdb189b) · [mdcp](https://sepolia.etherscan.io/tx/0x3ea4f8f66fa24af26690f8fc9f29b1077c84b09bbeefc36140934d7165204fd6))
+DeFi needs its own standard for how agents touch it. This is a proposal for what it should be.
 
-Two things the averages hide, and they matter more than the ratios:
+---
 
-**mdcp's cost is flat.** 54.7k / 55.1k / 56.0k / 56.4k tokens — whether the task
-is a balance read or a live swap. The official skill swings 60k–86k because each
-operation means re-deriving its own executor. Flat cost is what makes an
-integration predictable enough to budget.
+## How it's made (min 280 chars)
 
-**The safety was switched on the whole time.** Both mdcp swaps went through the
-approval gate live — plan returned, operator approved, then broadcast. The
-official arm has no enforced gate at all; its `AskUserQuestion` checkpoint
-exists only as prose the model may skip. We are faster *with* the seatbelt on.
+A TypeScript MCP server over stdio (@modelcontextprotocol/sdk). It exposes three tools — execute, resume, skills — and every chain capability lives behind them.
 
-Full methodology, caveats and raw logs: **[BENCHMARK.md](./BENCHMARK.md)**.
+Programs run in QuickJS compiled to WebAssembly. The runtime itself is an off-the-shelf npm dependency (@executor-js/runtime-quickjs, MIT) used as published; everything that turns it into a chain gateway is ours. Inside it a program gets no network, no filesystem, no environment and no reach into our process. Its only exit is a host-controlled bridge, so every call leaving the sandbox is a checkpoint we own.
 
-## What we had to build, that no protocol ships
+What we built on top is the part a general code runner does not have:
 
-These are the reusable primitives every DeFi agent needs and every protocol
-leaves as an exercise — this is the case for a shared standard rather than N
-per-protocol skill bundles:
+- A policy gate keyed on a declared side-effect class — view / local / chain. It is data on the tool rather than an instruction in a prompt, so it holds regardless of what the model decides to do. Only chain is gated.
+- Plan, then approve once. The first execute runs the whole strategy to completion without broadcasting anything and returns a single transaction plan. The operator approves the plan rather than each leg, so approval cost does not grow with the number of legs. On resume the program re-runs against live state, so a quote taken before the human answered is recomputed instead of replayed stale.
+- Transaction-intent idempotency. Each chain write is hashed over its economic fields only — token, direction, amount — plus an occurrence index, so re-quoting does not change an intent's identity and a transaction that already landed replays from a ledger instead of being sent again.
 
-- **an executor** — `check_approval → quote → Permit2 EIP-712 signature → swap →
-  broadcast → receipt`. Verified absent upstream: the SDKs state they "do not
-  execute trades or send transactions", and `@uniswap/client-trading` on npm is
-  protobuf types with zero dependencies (and is referenced by neither the docs
-  nor the skills).
-- **balances, allowances, token metadata, block state** — the Trading API is a
-  *trading* API; it has none of these. The official skill's answer is 7.6KB of
-  instructions for writing your own viem client.
-- **replay protection** — the API is stateless by design. Re-running a strategy
-  whose first attempt already landed double-spends. Our intent ledger keys each
-  transaction on its economic fields plus its occurrence index.
-- **an approval gate that works headlessly** — a scheduled DCA run has no human
-  to answer a prompt. Ours returns the whole transaction plan for one approval.
+Chain access is viem, against anvil mainnet forks and live Sepolia. Uniswap runs through the production Trading API (check_approval to quote to swap, with x-agent-info attribution), signed host-side: the key never enters the sandbox and only ever signs an intent from an approved plan. Hedera uses the Hiero SDK for HTS and HCS on testnet, with recipient keys in a host keystore so a token association can be signed without key material reaching the program.
 
-## Scope and selection
+Two integrations are generic MCP-upstream adapters. mdcp connects to another MCP server as a client, discovers its tools at runtime, converts their JSON Schema into compact TypeScript signatures and re-exposes them inside the sandbox. The Graph's subgraph-mcp and Hedera's 43-tool mirrornode-mcp-server are both mounted that way, unmodified. Upstream failures come back as values rather than thrown exceptions, so a program sweeping ten subgraphs still returns for the ones that answer.
 
-Stated once, so the results below can be read without wondering what was left
-out.
+Measurement is built in rather than bolted on: both interaction shapes are served from one capability registry by two thin servers, so the only thing that differs between arms is the shape, never the implementation, and every invocation logs argument bytes, result bytes, duration and whether it crossed the model boundary. That instrumentation caught two bugs in our own idempotency design that would have re-sent a transaction.
 
-We integrated three sponsors, and for each one we measured against **every
-official AI artifact that sponsor ships** — not a chosen subset:
+A reviewer can mount one protocol at a time with MDCP_PROFILE=uniswap|graph|hedera|all. All together it is 76 capabilities behind 3 MCP tools and 13KB of always-loaded description.
 
-- **Uniswap** ships a skill suite. `dca-bot` and `index-bot` are measured
-  skill-vs-skill, official file against a port that changes only the delegation
-  target. `copy-trade` is measured at the mechanism level only — we ran out of
-  time, not out of results.
-- **Hedera** ships an MCP server too — `mirrornode-mcp-server`, 43 tools
-  generated one per REST endpoint. Both arms use its unmodified tool
-  definitions, so the upstream is held constant here as well.
-- **The Graph** ships an MCP server. The *same unmodified binary* serves both
-  arms, so the upstream implementation is held constant.
+---
 
-The control arm is not a reimplementation of ours. It is the same capability
-registry (`app/src/tools.ts`) exposed as conventional one-tool-per-call MCP —
-identical code, different interaction shape.
+## Tech multiselects
 
-One scenario, a 20-fee-tier venue scan, is **excluded from every claim**: it
-forced the baseline to do routing the Trading API performs server-side, which
-made it a comparison of two different algorithms rather than two shapes. It is
-still in the repo (`app/bench/logs/s3-venue/`) so the exclusion is checkable.
+These are dropdowns — pick the closest matching options the form offers.
 
-## Integrations
+**Ethereum developer tools:** viem · Foundry (anvil mainnet forks for both benchmark arms) · Alchemy (RPC) · The Graph. Not Hardhat, not Truffle, not Remix — no contracts were written.
 
-- **Uniswap** — production Trading API (executor above) plus the on-chain path
-  (QuoterV2, SwapRouter02, v3 pool state, swap-log decoding for copy-trading).
-  Every request carries `x-agent-info: {"integration_name":"mdcp"}`.
-  Feedback for the Foundation: **[FEEDBACK.md](./FEEDBACK.md)** — claims verified
-  against the live API, with a section for the ones that didn't survive checking.
-- **The Graph** — the official `subgraph-mcp` server, unmodified, mounted
-  *inside* the sandbox via a generic MCP-upstream adapter: mdcp connects as an
-  MCP client, discovers the upstream's tools at runtime, and re-exposes them to
-  sandboxed programs. **The same binary serves both arms of the benchmark**, so
-  the upstream implementation is held constant and the only variable is
-  interaction shape.
-  The task is one query pattern on the Messari standardized schema, reused
-  verbatim across 4 protocols on 6 chains, all live from the gateway:
+**Blockchain networks:** Ethereum (mainnet state via fork) · Ethereum Sepolia (the live transaction trail) · Hedera (testnet — HTS/HCS). Also, read-only through The Graph: Arbitrum, Base, Optimism, Polygon, BNB Chain. Select those five only if you want completeness; execution happens on Sepolia and Hedera testnet.
 
-  | | 3 targets | 10 targets |
-  | --- | --- | --- |
-  | agent tool invocations | 19 → 3 | 43 → 5 |
-  | agent tokens | 1.16x fewer | **1.34x fewer** |
-  | wall clock | 1.6x faster | **3.1x faster** |
-  | payload through context | 15.7x less | **25.0x less** |
+**Programming languages:** TypeScript (everything) · JavaScript (sandbox programs, benchmark scripts) · Bash (benchmark arms, the `./mdcp` entrypoint) · HTML/CSS (the site). No Solidity.
 
-  Every ratio grows with task size: mdcp's cost is near-flat for 3.3x the work
-  while the conventional shape scales with N. The standardized schema is the
-  biggest single reason — the program never fetches a schema, and schema SDL
-  was **69% of the baseline's entire context payload**. Both arms produced
-  equivalent answers, and both caught the same two data-quality traps unprompted.
-  Skill: `skills/mdcp-graph/SKILL.md`. Evidence: `app/bench/logs/s5-graph/`,
-  `s6-graph-sweep/` (charts), `s7-graph-scale10/`.
-- **Hedera** — the **largest margin in the repo**, measured against
-  [`mirrornode-mcp-server`](https://github.com/hedera-dev/mirrornode-mcp-server):
-  Hedera's official MCP server, which generates **43 tools, one per mirror-node
-  REST endpoint**, straight from the OpenAPI spec.
+**Web frameworks:** none. The site is one hand-written static HTML file with one inline script. Pick "None"/"N/A" if offered, otherwise leave blank.
 
-  A six-endpoint portfolio + audit review ships **47,766 bytes into context
-  conventionally, 434 through mdcp — 110x less** — and **6 model round-trips
-  become 1**. Holder lists, raw transaction records and base64 topic messages
-  are filtered, decoded and aggregated inside the sandbox; only the answer
-  crosses. The catalog a client carries before doing any work drops from 36,968
-  to 7,932 bytes (4.7x). Deterministic run, both arms on Hedera's own
-  unmodified tool definitions, live testnet — BENCHMARK.md §4.
+**Databases:** none. Benchmark evidence is append-only JSONL on disk; the intent ledger is in-process. Pick "None"/"N/A" if offered, otherwise leave blank.
 
-  On the transaction side (HTS + HCS through the Hiero SDK) one catalog skill
-  (`skills/mdcp-port/hedera-catalog/SKILL.md`, 6.6KB, HTS **and** HCS) covers
-  both services, and the agent authored 25 lines instead of 181. Plus
-  guarantees the raw-SDK path has no equivalent of: the operator key never
-  enters the sandbox, and every transaction pipeline is planned and approved as
-  one unit before anything is broadcast.
+**Design tools:** none. Hand-written CSS.
 
-  Two upstream defects found and reported while wiring this up, both
-  reproduced with the repo's own pinned dependencies: `mirrornode-mcp-server`
-  does not start from a clean clone (`zod/v3` subpath vs pinned `zod@3.24.2`),
-  and its SSE endpoint answers HTTP 500 on every connection — so the 43 tools
-  it defines are unreachable as shipped. We served its own definitions over
-  stdio instead (`app/bench/upstream/`), leaving its files untouched.
+**Other technologies (free multiselect — type and enter):**
 
-  Live testnet trail: token
-  [0.0.10521642](https://hashscan.io/testnet/token/0.0.10521642), audit topic
-  [0.0.10521641](https://hashscan.io/testnet/topic/0.0.10521641).
+Model Context Protocol (MCP), @modelcontextprotocol/sdk, QuickJS, WebAssembly, @executor-js/runtime-quickjs (executor.sh), Uniswap Trading API, Permit2, Uniswap v3, Hiero SDK, Hedera Token Service (HTS), Hedera Consensus Service (HCS), Hedera mirrornode-mcp-server, The Graph subgraph-mcp, Messari subgraph standard, GraphQL, Zod, tsx, Claude Code
 
-## How it works
+---
 
-The program runs in **QuickJS compiled to WebAssembly** — no network, no
-filesystem, no environment access. The only way out is a host bridge we control,
-where policy is applied and signing happens. Keys never enter the sandbox: a
-program can *ask* for a swap, it cannot produce a signature.
+## Describe how AI tools were used
 
-Chain writes don't broadcast on the first call. The program runs to completion
-in a **planning pass**, and every transaction it intends to make comes back as
-one reviewable list. The operator approves once; the program then re-runs
-against live state, replaying already-landed transactions from the ledger rather
-than re-sending them.
+Two ways, and the second one is the project.
 
-Details, and why each piece exists: **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+Built with: Claude Code (Claude Opus) wrote most of the TypeScript under a normal review loop — I set the architecture and the invariants, read the diffs, and the benchmark harness caught what slipped through: two double-spend bugs in the transaction-intent idempotency design, and a planning pass that wrote local state so a DCA strategy read back its own dry run. The three sponsor integrations were built in parallel Claude Code sessions coordinating through the repo. Docs and the landing page were drafted the same way.
 
-We use [`@executor-js/runtime-quickjs`](https://www.npmjs.com/package/@executor-js/runtime-quickjs)
-(MIT, by Rhys Sullivan / executor.sh) for the sandbox itself rather than writing
-our own — code-mode execution is solved; the crypto layer on top is ours.
+Measured with: mdcp is infrastructure for AI agents, so every benchmark is an AI run. Each result in BENCHMARK.md is a fresh Claude Code agent handed one task and one of two tool surfaces — the protocol's own official skills or MCP server on one side, mdcp on the other — with no knowledge of the other arm. Agent tokens, wall clock, tool invocations and transcript payload bytes are recorded per run, and both agents' verbatim answers plus the raw logs ship in the repo, so every ratio can be recomputed from the evidence rather than taken on trust.
 
-## Quickstart
+---
 
-```bash
-cd app && npm install && cd ..
-cp app/.env.example app/.env     # fill in what your track needs
+# Partner prizes
 
-./mdcp surface uniswap           # what a profile mounts — needs no credentials
-```
+Links pinned to commit `3f06235` so line numbers stay correct.
 
-One server, four capability profiles, so a reviewer looking at one sponsor
-mounts that sponsor's surface and nothing else:
+**Note on the feedback fields:** kept to one sentence each for Hedera and The
+Graph — neither asks for feedback in their bounty requirements, so this is a
+courtesy, not a pitch. Uniswap is the exception: their Developer Feedback Form
+is a hard qualification gate, already submitted with the FEEDBACK.md link, so
+the long version lives there.
 
-| `MDCP_PROFILE` | mounts | capabilities | always-loaded `execute` description |
-| --- | --- | --- | --- |
-| `uniswap` | `chain.* token.* wallet.* uniswap.* state.*` | 13 | 2,600 B |
-| `graph` | `graph.* state.*` | 11 | 1,769 B |
-| `hedera` | `hts.* hcs.* mirror.* state.*` | 56 | 10,435 B |
-| `all` | everything | 76 | 12,966 B |
+---
 
-**76 capabilities behind 3 MCP tools.** `.mcp.json` declares all four profiles
-for any MCP client; `./mdcp surface <profile>` reproduces the table.
-The counts include the two MCP upstreams mdcp mounts as a client (The Graph's
-`subgraph-mcp`, Hedera's mirror-node server); without their env set the mount
-fails soft and the native-only surface is 13 / 2 / 24.
+## Hedera — $15,000
 
-```bash
-# live Sepolia through the production Trading API
-CHAIN_PROFILE=sepolia MDCP_PROFILE=uniswap ./mdcp execute \
-  'return await tools["uniswap.apiQuote"]({tokenIn:"USDC",tokenOut:"WETH",amountIn:"25000000"});'
+**Track:** Open Source — Improve the Hedera Harness.
 
-# Hedera testnet, read-only, costs no HBAR
-MDCP_PROFILE=hedera ./mdcp execute 'return await tools["hts.network"]({});'
+**Why you're applicable:**
 
-# The Graph, through the official subgraph-mcp server mounted inside the sandbox
-MDCP_PROFILE=graph ./mdcp execute \
-  'return await tools["graph.search_subgraphs_by_keyword"]({keyword:"uniswap"});'
+We built a new MCP standard for DeFi and ran Hedera's own 43-tool
+`mirrornode-mcp-server` on it, unmodified — plus one native HTS + HCS catalog
+on the Hiero SDK, live on testnet.
 
-# as an MCP server on stdio (surface: execute / resume / skills)
-./mdcp serve
-```
+- **110x less into model context** — 47,766 → 434 bytes, 6 → 1 round-trips
+- **4.7x smaller tool catalog** — 36,968 → 7,932 bytes
+- **181 → 25 lines** of agent-authored code on a two-service task
 
-Credentials, per-track walkthroughs, the approval flow and troubleshooting:
-**[RUN.md](./RUN.md)**.
+Live testnet trail: token 0.0.10521642, topic 0.0.10521641.
 
-`./mdcp serve-baseline` exposes the *same* capabilities as conventional
-one-tool-per-call MCP — that's the control arm, so the comparison runs identical
-code on both sides.
+**Link to the line of code:**
 
-## What the benchmark caught in our own design
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/hedera.ts#L170-L260
 
-Worth more than the ratios, because they're the failure modes this layer exists
-to prevent — and all three were found by running it, not by reasoning about it:
+(native HTS + HCS writes through the Hiero SDK. The mirror-node MCP upstream
+adapter is
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/hederaUpstream.ts#L123-L158 )
 
-1. **Intent hashes over volatile fields double-spend.** Hashing
-   `amountOutMinimum` meant a re-quote after the price moved looked like a new
-   transaction. A resumed run re-broadcast a swap that had already landed.
-2. **A planning pass with side effects poisons the real run.** Local state
-   writes executed during planning, so a DCA strategy read back its own dry run
-   and concluded it had already bought that day.
-3. **Legitimate repeats collapsed into one.** Three copy-trade mirrors at the
-   same size deduped to a single intent — 75 USDC of intent, 25 USDC executed.
-   Caught by the benchmark agent itself, which noticed three identical hashes.
+**Ease of the API / protocol: 6**
 
-## Honest limitations
+The Hiero SDK alone is closer to a 9; the mirror-node MCP server needed a
+dependency pin and a transport swap before its tools were reachable.
 
-- Benchmarks are N=1 per operation; we trust the direction and the mechanism,
-  not the second decimal of any ratio.
-- One scenario (a 20-fee-tier venue scan) is **excluded from all claims** — it
-  forced the baseline to do routing the Trading API performs server-side.
-- Skill-vs-skill coverage is `dca-bot` and `index-bot`. `copy-trade` is
-  measured at the mechanism level only; `lp-integration`, x402 and the v4 SDK
-  are not covered.
-- Byte counts, call counts and payload sizes are derived from the machine logs
-  in `app/bench/logs/` and can be recomputed from this repo. Token and
-  wall-clock figures come from the agent runner's usage accounting, recorded in
-  each scenario's `RESULTS.md` — a prose file, not a machine log. Both are
-  reported as measured; only the former is independently checkable here.
-- The Graph scenarios query live subgraphs whose health changes within hours,
-  so a rerun succeeds with a different set of rows rather than reproducing the
-  recorded one.
-- UniswapX / Dutch-auction routing is out of scope — the gateway handles
-  CLASSIC, WRAP and UNWRAP.
+**Additional feedback:**
 
-## AI attribution
+The Hiero SDK was a pleasure; the only detour was `mirrornode-mcp-server`, which
+didn't start from a clean clone for us (`fastmcp` pulls `zod-to-json-schema`,
+which imports the `zod/v3` subpath, while the repo pins `zod@3.24.2`) — a
+lockfile would save the next integrator the hour.
 
-Built with Claude Code (Claude Fable 5 / Opus 5) driving implementation under
-human direction; all planning artifacts and prompts are in the repo
-(`PLAN.md`, `skills/`, the benchmark agent prompts embedded in
-`app/bench/logs/`). The human author set the architecture, chose the partner
-integrations and the experiment design, rejected the first benchmark as unfair
-to the baseline, and required every claim in `FEEDBACK.md` to be verified
-against the live API before it was written down. Benchmark runs were executed by
-Claude Sonnet subagents with empty context, on both arms equally.
+---
 
-## Docs
+## The Graph — $15,000
 
-- [RUN.md](./RUN.md) — how to run it: credentials, profiles, per-track walkthroughs
-- [BENCHMARK.md](./BENCHMARK.md) — methodology, all three levels, raw logs
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — the sandbox, policy, planning, idempotency
-- [FEEDBACK.md](./FEEDBACK.md) — feedback for the Uniswap Foundation
-- [skills/](./skills/) — the official suite and our port, side by side
-- [bounties/](./bounties/) — per-sponsor evidence maps and submission paperwork
-- Site: <https://ivanvolov.github.io/mdcp/> — the benchmark figures and an
-  interactive composability demo
+**Track:** AI Tooling / AI Use Case (From Scratch), plus Composable or
+Standardized Graph Products.
+
+**Why you're applicable:**
+
+We built a new MCP standard for DeFi and ran The Graph's own `subgraph-mcp` on
+it so save tokens and time for developers and users. unmodified — same server, same live gateway data, only the interaction
+shape differs. Task: one Messari-standard query across 4 protocols on 6 chains.
+
+- **25x less transcript payload** — 242KB → 9.7KB, 43 → 5 tool calls, 3.1x
+  faster (10 targets)
+- 15.7x at 3 targets: every ratio grows with task size while our side stays
+  flat — 63k → 71k tokens for 3.3x the work
+- **schema SDL was 69% of the baseline's entire context payload**
+
+**Link to the line of code:**
+
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/graphUpstream.ts#L108-L136
+
+**Ease of the API / protocol: 8**
+
+Clean clone, plain MCP, both the local binary and the hosted SSE bridge worked.
+
+**Additional feedback:**
+
+`subgraph-mcp` was the easiest upstream we integrated; the one thing we'd ask
+for is a last-indexed-block or staleness field in the response, since our
+agents had to catch a ~41-day-stale snapshot by hand before ranking on it.
+
+---
+
+## Uniswap Foundation — $5,000
+
+**Track:** Best Uniswap Stack Contribution (Classic / From Scratch).
+
+**Why you're applicable:**
+
+We built a new MCP standard for DeFi — one `execute` tool, the agent's program
+runs in a sandbox next to the chain — and ran Uniswap's own `uniswap-ai` skills
+on it, changing only the delegation target (12 lines of 126 in `dca-bot`). Same
+task, same Trading API, fresh agent each side:
+
+- index-bot, 3-leg basket: **180k → 64k tokens (2.81x), 738s → 67s (11.0x)**
+- dca-bot on the Trading API: **115k → 63k tokens (1.81x), 193s → 65s (3.0x)**
+- live Sepolia swap: **86k → 56k tokens, 145s → 57s (2.5x)**, four public txs
+
+Our side stays flat at ~55-64k tokens whether the task is a balance read or a
+3-leg basket; the official arm swings 60k-180k because it rewrites its own
+executor every session. Trading API integration is `check_approval` → `quote` →
+Permit2 → `swap`, signed host-side, `x-agent-info: integration_name "mdcp"` on
+every request. Detailed developer feedback, including two claims we withdrew
+after verifying them: https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md
+
+**Link to the line of code:**
+
+https://github.com/ivanvolov/mdcp/blob/3f06235/app/src/tradingApi.ts#L154-L200
+
+**Ease of the API / protocol: 5**
+
+Routing and quoting are excellent. The 5 is the gap between a quote and a
+confirmed transaction: no official executor, Permit2 signing specified for
+request shape but never for the act of signing, and a documented Legacy
+approval path that reverts as written. All reproduced in FEEDBACK.md.
