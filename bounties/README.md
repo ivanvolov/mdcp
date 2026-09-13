@@ -13,8 +13,12 @@ pointing at the real files.
 ETHGlobal lets one project select **3 partner prizes** at submission. The picks
 are a single decision across all folders here; see each TODO for its ask.
 
-| folder | sponsor | pool | status |
+| folder | sponsor | pool | repo status |
 | --- | --- | --- | --- |
-| `the-graph/` | The Graph | $15,000 / 3 tracks | ready to submit, needs video |
-| `uniswap/` | Uniswap Foundation | $5,000 / 1 open track | qualification complete, needs video |
-| `hedera/` | Hedera | $2,000 / Improve the Harness | qualification met, needs video; upstream PR would make it unambiguous |
+| `the-graph/` | The Graph | $15,000 / 3 tracks | complete — code, benchmarks, skill, paperwork all in |
+| `uniswap/` | Uniswap Foundation | $5,000 / 1 open track | complete — qualification gate (developer feedback form) closed |
+| `hedera/` | Hedera | $2,000 / Improve the Harness | complete — an upstream PR would strengthen requirement #1 |
+
+"repo status" means what is in this repository. The submission itself (prize
+picks, demo video, ETHGlobal form) is an operator task and is deliberately not
+tracked here.

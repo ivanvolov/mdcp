@@ -84,6 +84,34 @@ per-protocol skill bundles:
 - **an approval gate that works headlessly** — a scheduled DCA run has no human
   to answer a prompt. Ours returns the whole transaction plan for one approval.
 
+## Scope and selection
+
+Stated once, so the results below can be read without wondering what was left
+out.
+
+We integrated three sponsors, and for each one we measured against **every
+official AI artifact that sponsor ships** — not a chosen subset:
+
+- **Uniswap** ships a skill suite. `dca-bot` and `index-bot` are measured
+  skill-vs-skill, official file against a port that changes only the delegation
+  target. `copy-trade` is measured at the mechanism level only — we ran out of
+  time, not out of results.
+- **Hedera** ships two artifacts with opposite shapes. Both are measured, and
+  they come out in opposite directions: **no improvement** against the
+  `hedera-skills` SKILL.md suite, a large one against the 43-tool
+  `mirrornode-mcp-server`. Both are reported below with equal weight.
+- **The Graph** ships an MCP server. The *same unmodified binary* serves both
+  arms, so the upstream implementation is held constant.
+
+The control arm is not a reimplementation of ours. It is the same capability
+registry (`app/src/tools.ts`) exposed as conventional one-tool-per-call MCP —
+identical code, different interaction shape.
+
+One scenario, a 20-fee-tier venue scan, is **excluded from every claim**: it
+forced the baseline to do routing the Trading API performs server-side, which
+made it a comparison of two different algorithms rather than two shapes. It is
+still in the repo (`app/bench/logs/s3-venue/`) so the exclusion is checkable.
+
 ## Integrations
 
 - **Uniswap** — production Trading API (executor above) plus the on-chain path
@@ -95,13 +123,14 @@ per-protocol skill bundles:
   *inside* the sandbox via a generic MCP-upstream adapter: mdcp connects as an
   MCP client, discovers the upstream's tools at runtime, and re-exposes them to
   sandboxed programs. **The same binary serves both arms of the benchmark**, so
-  the only variable is interaction shape — arguably our cleanest experiment.
+  the upstream implementation is held constant and the only variable is
+  interaction shape.
   The task is one query pattern on the Messari standardized schema, reused
   verbatim across 4 protocols on 6 chains, all live from the gateway:
 
   | | 3 targets | 10 targets |
   | --- | --- | --- |
-  | tool invocations | 19 → 3 | 43 → 5 |
+  | agent tool invocations | 19 → 3 | 43 → 5 |
   | agent tokens | 1.16x fewer | **1.34x fewer** |
   | wall clock | 1.6x faster | **3.1x faster** |
   | payload through context | 15.7x less | **25.0x less** |
@@ -109,7 +138,7 @@ per-protocol skill bundles:
   Every ratio grows with task size: mdcp's cost is near-flat for 3.3x the work
   while the conventional shape scales with N. The standardized schema is the
   biggest single reason — the program never fetches a schema, and schema SDL
-  was **70% of the baseline's entire context payload**. Both arms produced
+  was **69% of the baseline's entire context payload**. Both arms produced
   equivalent answers, and both caught the same two data-quality traps unprompted.
   Skill: `skills/mdcp-graph/SKILL.md`. Evidence: `app/bench/logs/s5-graph/`,
   `s6-graph-sweep/` (charts), `s7-graph-scale10/`.
@@ -173,31 +202,45 @@ our own — code-mode execution is solved; the crypto layer on top is ours.
 ## Quickstart
 
 ```bash
-cd app && npm install
-cp .env.example .env     # RPC + UNISWAP_API_KEY (+ a throwaway testnet key)
+cd app && npm install && cd ..
+cp app/.env.example app/.env     # fill in what your track needs
 
-# live Sepolia through the production Trading API
-CHAIN_PROFILE=sepolia npx tsx bench/cli.ts execute \
-  'return await tools["uniswap.apiQuote"]({tokenIn:"USDC",tokenOut:"WETH",amountIn:"25000000"});'
-
-# as an MCP server (surface: execute / resume / skills)
-npx tsx src/mcp-mdcp.ts
+./mdcp surface uniswap           # what a profile mounts — needs no credentials
 ```
 
-Hedera (live testnet; HTS/HCS writes need a funded operator key, the
-mirror-node benchmark needs nothing because every tool is a GET):
+One server, four capability profiles, so a reviewer looking at one sponsor
+mounts that sponsor's surface and nothing else:
+
+| `MDCP_PROFILE` | mounts | capabilities | always-loaded `execute` description |
+| --- | --- | --- | --- |
+| `uniswap` | `chain.* token.* wallet.* uniswap.* state.*` | 13 | 2,600 B |
+| `graph` | `graph.* state.*` | 11 | 1,769 B |
+| `hedera` | `hts.* hcs.* mirror.* state.*` | 56 | 10,435 B |
+| `all` | everything | 76 | 12,966 B |
+
+**76 capabilities behind 3 MCP tools.** `.mcp.json` declares all four profiles
+for any MCP client; `./mdcp surface <profile>` reproduces the table.
 
 ```bash
-# two-service pipeline: topic + token + mint + audit trail, one program
-bash bench/arm-hedera.sh execute @bench/programs/audit-trail.ts
-bash bench/arm-hedera.sh resume '{"executionId":"<id>","approve":true}'
+# live Sepolia through the production Trading API
+CHAIN_PROFILE=sepolia MDCP_PROFILE=uniswap ./mdcp execute \
+  'return await tools["uniswap.apiQuote"]({tokenIn:"USDC",tokenOut:"WETH",amountIn:"25000000"});'
 
-# the 110x mirror-node benchmark (§6) — see app/bench/upstream/README.md
-# for starting Hedera's own MCP server first
-npx tsx bench/mirror-sweep.ts
+# Hedera testnet, read-only, costs no HBAR
+MDCP_PROFILE=hedera ./mdcp execute 'return await tools["hts.network"]({});'
+
+# The Graph, through the official subgraph-mcp server mounted inside the sandbox
+MDCP_PROFILE=graph ./mdcp execute \
+  'return await tools["graph.search_subgraphs_by_keyword"]({keyword:"uniswap"});'
+
+# as an MCP server on stdio (surface: execute / resume / skills)
+./mdcp serve
 ```
 
-`src/mcp-baseline.ts` exposes the *same* 21 capabilities as conventional
+Credentials, per-track walkthroughs, the approval flow and troubleshooting:
+**[RUN.md](./RUN.md)**.
+
+`./mdcp serve-baseline` exposes the *same* capabilities as conventional
 one-tool-per-call MCP — that's the control arm, so the comparison runs identical
 code on both sides.
 
@@ -222,9 +265,17 @@ to prevent — and all three were found by running it, not by reasoning about it
   not the second decimal of any ratio.
 - One scenario (a 20-fee-tier venue scan) is **excluded from all claims** — it
   forced the baseline to do routing the Trading API performs server-side.
-- Skill-vs-skill coverage is `dca-bot`. `index-bot` and `copy-trade` are
+- Skill-vs-skill coverage is `dca-bot` and `index-bot`. `copy-trade` is
   measured at the mechanism level only; `lp-integration`, x402 and the v4 SDK
   are not covered.
+- Byte counts, call counts and payload sizes are derived from the machine logs
+  in `app/bench/logs/` and can be recomputed from this repo. Token and
+  wall-clock figures come from the agent runner's usage accounting, recorded in
+  each scenario's `RESULTS.md` — a prose file, not a machine log. Both are
+  reported as measured; only the former is independently checkable here.
+- The Graph scenarios query live subgraphs whose health changes within hours,
+  so a rerun succeeds with a different set of rows rather than reproducing the
+  recorded one.
 - UniswapX / Dutch-auction routing is out of scope — the gateway handles
   CLASSIC, WRAP and UNWRAP.
 
@@ -241,8 +292,11 @@ Claude Sonnet subagents with empty context, on both arms equally.
 
 ## Docs
 
+- [RUN.md](./RUN.md) — how to run it: credentials, profiles, per-track walkthroughs
 - [BENCHMARK.md](./BENCHMARK.md) — methodology, all three levels, raw logs
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — the sandbox, policy, planning, idempotency
 - [FEEDBACK.md](./FEEDBACK.md) — feedback for the Uniswap Foundation
 - [skills/](./skills/) — the official suite and our port, side by side
 - [PRIZES.md](./PRIZES.md) — the event's prize information, captured locally
+- Site: <https://ivanvolov.github.io/mdcp/> — the benchmark figures and an
+  interactive composability demo

@@ -88,7 +88,7 @@ far cheaper. We report it because it is what a real first encounter costs.
 
 ### Level 2: both arms on the production Trading API, execution on forks
 
-The strongest comparison: both arms use Uniswap's real Trading API — the path
+Both arms use Uniswap's real Trading API — the path
 `swap-integration` actually prescribes (`check_approval` -> `quote` -> permit
 signature -> `swap`) — with live routing and calldata, executed against fresh
 mainnet forks. Zero deviations from the skill's documented flow on either side.

@@ -41,10 +41,10 @@ included, no prerequisite skill to read separately.
 - mdcp catalog: **~6.5KB, one file**
 
 The first Hedera round (`mdcp-port/hedera-token-service/`, kept for
-reproducibility — BENCHMARK.md §4) deliberately tested the *single*-service
-case and found mdcp cost-neutral and slower. That is the honest degenerate
-case: one well-documented service has nothing for a gateway to collapse. The
-catalog skill exists to test the axis that actually matters — composition.
+reproducibility — BENCHMARK.md §4) tested the single-service case and found
+mdcp cost-neutral and slower: one well-documented service has nothing for a
+gateway to collapse. The catalog skill extends the same comparison to two
+services (§5), which changed the artifact ratios but not the agent cost.
 
 All Hedera runs are level 3 (live testnet — these are native services, there is
 no fork to run them on). `app/bench/arm-hedera.sh` is the arm (gated by
@@ -53,7 +53,7 @@ no fork to run them on). `app/bench/arm-hedera.sh` is the arm (gated by
 topic, create and mint a token, write an audit event per step, read the trail
 back — run with `bash bench/arm-hedera.sh execute @bench/programs/audit-trail.ts`.
 
-### The other Hedera surface — where the shape actually wins
+### The other Hedera surface — the mirror-node MCP server
 
 Hedera ships a *second* official AI artifact with the opposite shape:
 [mirrornode-mcp-server](https://github.com/hedera-dev/mirrornode-mcp-server)
@@ -69,9 +69,8 @@ across six endpoints (BENCHMARK.md §6, deterministic, zero HBAR):
 - payload into model context: **47,766 -> 434 bytes (110x)**, 6 round-trips -> 1
 - catalog surface: **36,968 -> 7,932 bytes (4.7x)**
 
-The two Hedera surfaces together are the cleanest statement of when this
-approach pays: against a skill that already tells the agent to write code,
-nothing; against a per-tool MCP server, 110x.
+Both Hedera surfaces are reported: against a skill that already tells the agent
+to write code, no improvement; against a per-tool MCP server, 110x less payload.
 
 ## The Graph
 

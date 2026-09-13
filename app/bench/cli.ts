@@ -11,7 +11,7 @@
  * Every invocation appends a record to $BENCH_LOG.
  */
 import fs from "node:fs";
-import { TOOL_BY_PATH, TOOLS, jsonSafe } from "../src/tools.js";
+import { TOOL_BY_PATH, TOOLS, jsonSafe, profileWants, registerTools } from "../src/tools.js";
 import { execute, resume } from "../src/sandbox.js";
 import { bytesOf, logCall } from "../src/instrument.js";
 import { ensureGraphTools, closeGraphUpstream } from "../src/graphUpstream.js";
@@ -27,8 +27,10 @@ function out(value: unknown) {
 
 async function main() {
   // Graph scenarios opt in; Uniswap scenarios never pay the upstream handshake.
-  if (process.env.GRAPH_UPSTREAM === "1") await ensureGraphTools();
-  if (process.env.MIRROR_UPSTREAM === "1") await ensureMirrorTools();
+  // profileWants() honours both the historical per-family flags (GRAPH_UPSTREAM,
+  // MIRROR_UPSTREAM — every recorded arm script uses these) and MDCP_PROFILE.
+  if (profileWants("graph")) await ensureGraphTools();
+  if (profileWants("mirror")) registerTools(await ensureMirrorTools());
 
   if (!command || command === "help") {
     out({
