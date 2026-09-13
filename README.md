@@ -220,6 +220,9 @@ mounts that sponsor's surface and nothing else:
 
 **76 capabilities behind 3 MCP tools.** `.mcp.json` declares all four profiles
 for any MCP client; `./mdcp surface <profile>` reproduces the table.
+The counts include the two MCP upstreams mdcp mounts as a client (The Graph's
+`subgraph-mcp`, Hedera's mirror-node server); without their env set the mount
+fails soft and the native-only surface is 13 / 2 / 24.
 
 ```bash
 # live Sepolia through the production Trading API

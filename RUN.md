@@ -71,6 +71,12 @@ nothing else.
 | `all` | everything | 76 | 12,966 B |
 | *unset* | whatever `GRAPH_UPSTREAM` / `HEDERA_TOOLS` / `MIRROR_UPSTREAM` enable | — | — |
 
+The counts include the two **MCP upstreams** — The Graph's `subgraph-mcp` and
+Hedera's mirror-node server — which mdcp mounts as a client. They need their env
+set (`GATEWAY_API_KEY`, `MIRRORNODE_MCP_BIN`). Without it the mount fails soft
+and you see the native-only surface instead: `hedera` 13 / 2,502 B, `graph`
+2 / 919 B, `all` 24 / 4,183 B. Verified on a fresh clone with no `.env` at all.
+
 Measured with `./mdcp surface <profile>`; reproduce them yourself with the same
 command. Leaving `MDCP_PROFILE` unset is the historical behaviour on purpose —
 every benchmark arm script in `app/bench/` predates profiles and must keep
