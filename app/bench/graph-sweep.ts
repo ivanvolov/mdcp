@@ -62,6 +62,10 @@ function cumulative(surface: number, perCallBytes: number[]) {
     processed += carried;
     carried += tokens(bytes);
   }
+  // The answer turn: the model re-reads everything once more to write the
+  // final deliverable. Charged to BOTH arms — omitting it flatters mdcp,
+  // whose whole transcript is one call.
+  processed += carried;
   return { processedTokens: processed, finalContextTokens: carried };
 }
 

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mdcp × The Graph — scaling sweep</title>
+<style>
+  :root { color-scheme: light; }
+  .viz-root {
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* baseline: per-tool MCP */
+    --series-2: #eb6834; /* mdcp: code mode */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-2: #d95926;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-2: #d95926;
+  }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { background: var(--page); color: var(--ink-1); min-height: 100vh; padding: 28px 20px 40px; box-sizing: border-box; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--ink-2); font-size: 13px; margin: 0 0 20px; max-width: 72ch; }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 16px 10px; flex: 1 1 460px; min-width: 320px; box-sizing: border-box; }
+  .card h2 { font-size: 14px; margin: 0 0 2px; }
+  .card .note { font-size: 12px; color: var(--ink-2); margin: 0 0 10px; }
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-2); margin: 6px 0 2px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  svg { width: 100%; height: auto; display: block; }
+  svg text { font-family: inherit; }
+  .tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; color: var(--ink-1); box-shadow: 0 2px 10px rgba(0,0,0,.12); display: none; z-index: 9; }
+  .tiles { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; flex: 1 1 180px; min-width: 160px; }
+  .tile .v { font-size: 26px; font-weight: 650; }
+  .tile .k { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  table.data { border-collapse: collapse; font-size: 12px; margin-top: 10px; color: var(--ink-2); display: none; }
+  .toggle { font-size: 12px; color: var(--ink-2); background: none; border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; cursor: pointer; margin: 10px 0 0; }
+  td, th { border-bottom: 1px solid var(--grid); padding: 3px 10px 3px 0; text-align: right; font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; }
+</style>
+</head>
+<body>
+<div class="viz-root"><div class="wrap">
+  <h1>Same task, same server — the gap grows with task size</h1>
+  <p class="sub">Sweep of N Messari standardized subgraphs (protocols × chains) through The Graph's
+  official subgraph-mcp, live gateway data. Both arms perform identical upstream work
+  (search → schema → 2 queries per target); the only variable is where results land:
+  every payload in the model's transcript (per-tool MCP) vs. one program in the mdcp sandbox.</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="v">4N&nbsp;→&nbsp;1</div><div class="k">model round-trips at N targets</div></div>
+    <div class="tile"><div class="v">92×</div><div class="k">less tool payload in transcript at N=10 (390&nbsp;KB → 4.2&nbsp;KB)</div></div>
+    <div class="tile"><div class="v">1,238×</div><div class="k">less cumulative context processed at N=10</div></div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h2>Tool payload entering the transcript</h2>
+      <p class="note">thousand tokens (bytes/4), by number of targets swept — measured live</p>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--series-1)"></i>per-tool MCP (baseline)</span>
+        <span><i class="swatch" style="background:var(--series-2)"></i>mdcp execute()</span>
+      </div>
+      <svg id="c1" viewBox="0 0 560 330" role="img" aria-label="Line chart: transcript tokens grow roughly linearly with N for the baseline, from 14.8 thousand at N=1 to 97.4 thousand at N=10; mdcp stays nearly flat, from 0.5 to 1.1 thousand."></svg>
+    </div>
+    <div class="card">
+      <h2>The compounding effect: cumulative context processed</h2>
+      <p class="note">ratio, baseline ÷ mdcp — an agent re-reads its whole transcript every turn, so per-tool cost grows quadratically</p>
+      <svg id="c2" viewBox="0 0 560 330" role="img" aria-label="Line chart: the ratio of cumulative context processed, baseline over mdcp, grows from 36 times at N=1 to 1238 times at N=10."></svg>
+    </div>
+  </div>
+
+  <button class="toggle" onclick="document.querySelector('table.data').style.display='table';this.remove()">Show data table</button>
+  <table class="data">
+    <thead><tr><th>N</th><th>baseline calls</th><th>baseline kTok</th><th>mdcp kTok</th><th>processed ratio</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div></div>
+<div class="tip" id="tip"></div>
+<script>
+const DATA = [
+  { n:1,  bCalls:4,  bTok:14.80, mTok:0.46, bProc:40318,   mProc:1124 },
+  { n:2,  bCalls:8,  bTok:25.78, mTok:0.56, bProc:128122,  mProc:1215 },
+  { n:3,  bCalls:12, bTok:35.59, mTok:0.65, bProc:256904,  mProc:1306 },
+  { n:4,  bCalls:16, bTok:50.47, mTok:0.74, bProc:440139,  mProc:1397 },
+  { n:6,  bCalls:24, bTok:61.23, mTok:0.80, bProc:900382,  mProc:1464 },
+  { n:8,  bCalls:32, bTok:71.56, mTok:0.87, bProc:1444429, mProc:1532 },
+  { n:10, bCalls:40, bTok:97.44, mTok:1.06, bProc:2130001, mProc:1720 },
+];
+DATA.forEach(d => d.ratio = d.bProc / d.mProc);
+
+const css = (name) => getComputedStyle(document.querySelector('.viz-root')).getPropertyValue(name).trim();
+const tip = document.getElementById('tip');
+
+function chart(svgId, series, yMax, yLabel, fmt) {
+  const svg = document.getElementById(svgId);
+  const W = 560, H = 330, L = 52, R = 70, T = 14, B = 34;
+  const x = n => L + (n - 1) / 9 * (W - L - R);
+  const y = v => T + (1 - v / yMax) * (H - T - B);
+  let g = '';
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const v = yMax / steps * i, yy = y(v);
+    g += `<line x1="${L}" y1="${yy}" x2="${W - R}" y2="${yy}" stroke="${css('--grid')}" stroke-width="1"/>`;
+    g += `<text x="${L - 8}" y="${yy + 4}" text-anchor="end" font-size="11" fill="${css('--ink-muted')}">${fmt(v)}</text>`;
+  }
+  for (const n of [1,2,3,4,6,8,10]) {
+    g += `<text x="${x(n)}" y="${H - B + 18}" text-anchor="middle" font-size="11" fill="${css('--ink-muted')}">${n}</text>`;
+  }
+  g += `<line x1="${L}" y1="${y(0)}" x2="${W - R}" y2="${y(0)}" stroke="${css('--axis')}" stroke-width="1"/>`;
+  g += `<text x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle" font-size="11" fill="${css('--ink-muted')}">targets swept (N)</text>`;
+  for (const s of series) {
+    const pts = DATA.map(d => `${x(d.n)},${y(s.get(d))}`).join(' ');
+    g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round"/>`;
+    for (const d of DATA) {
+      g += `<circle cx="${x(d.n)}" cy="${y(s.get(d))}" r="3.5" fill="${s.color}" stroke="${css('--surface-1')}" stroke-width="2"
+             data-tip="N=${d.n} — ${s.name}: ${s.fmtV(s.get(d))}"/>`;
+      g += `<circle cx="${x(d.n)}" cy="${y(s.get(d))}" r="11" fill="transparent"
+             data-tip="N=${d.n} — ${s.name}: ${s.fmtV(s.get(d))}"/>`;
+    }
+    const last = DATA[DATA.length - 1];
+    g += `<text x="${x(10) + 8}" y="${y(s.get(last)) + 4}" font-size="11.5" font-weight="600" fill="${css('--ink-1')}">${s.endLabel(last)}</text>`;
+  }
+  g += `<text x="${L}" y="${T - 2}" font-size="11" fill="${css('--ink-muted')}">${yLabel}</text>`;
+  svg.innerHTML = g;
+  svg.addEventListener('mousemove', (e) => {
+    const t = e.target.closest('[data-tip]');
+    if (!t) { tip.style.display = 'none'; return; }
+    tip.textContent = t.dataset.tip;
+    tip.style.display = 'block';
+    tip.style.left = (e.clientX + 12) + 'px';
+    tip.style.top = (e.clientY - 10) + 'px';
+  });
+  svg.addEventListener('mouseleave', () => tip.style.display = 'none');
+}
+
+chart('c1', [
+  { name: 'per-tool MCP', color: css('--series-1'), get: d => d.bTok,
+    fmtV: v => v.toFixed(1) + 'k tok', endLabel: d => d.bTok.toFixed(0) + 'k' },
+  { name: 'mdcp execute()', color: css('--series-2'), get: d => d.mTok,
+    fmtV: v => v.toFixed(2) + 'k tok', endLabel: d => d.mTok.toFixed(1) + 'k' },
+], 100, 'thousand tokens', v => v.toFixed(0));
+
+chart('c2', [
+  { name: 'baseline ÷ mdcp', color: css('--series-1'), get: d => d.ratio,
+    fmtV: v => v.toFixed(0) + '×', endLabel: d => d.ratio.toFixed(0) + '×' },
+], 1300, 'ratio (×)', v => v.toFixed(0));
+
+document.getElementById('tbody').innerHTML = DATA.map(d =>
+  `<tr><td>${d.n}</td><td>${d.bCalls}</td><td>${d.bTok.toFixed(1)}</td><td>${d.mTok.toFixed(2)}</td><td>${d.ratio.toFixed(0)}×</td></tr>`
+).join('');
+</script>
+</body>
+</html>

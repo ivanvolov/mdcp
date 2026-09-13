@@ -44,3 +44,17 @@ no fork to run it on). `app/bench/arm-hedera.sh` is the arm;
 `app/bench/hedera-probe.ts` replays the official evals' "GameGold" scenario
 (create 8-decimal token, 1M supply, transfer 500 to a fresh account) as one
 mdcp program, deterministically, before any model tokens are spent.
+
+## The Graph
+
+Third surface, different shape: The Graph's official AI artifact is not a text
+skill but a live MCP server (`graphops/subgraph-mcp`, Apache-2.0). So there is
+nothing to copy verbatim and nothing to port — **mdcp wraps the unmodified
+server itself** (`app/src/graphUpstream.ts` connects as an MCP client and
+re-exposes its 9 tools inside the sandbox as `graph.*`).
+
+`mdcp-graph/` is the skill judges can run: setup (a Subgraph Studio key), the
+calling convention, and the cross-protocol Messari-standardized-schema pattern
+the benchmark measures. Both benchmark arms use the same official server on
+live gateway data — the only variable is interaction shape. Results:
+`BENCHMARK.md` §3, raw logs `app/bench/logs/s5-graph/` and `s6-graph-sweep/`.

@@ -1,0 +1,135 @@
+[
+  {
+    "arm": "baseline",
+    "n": 1,
+    "boundaryCalls": 4,
+    "transcriptBytes": 59199,
+    "hiddenBytes": 0,
+    "wallMs": 2224,
+    "processedTokens": 40318,
+    "finalContextTokens": 15095
+  },
+  {
+    "arm": "mdcp",
+    "n": 1,
+    "boundaryCalls": 1,
+    "transcriptBytes": 1854,
+    "wallMs": 2102,
+    "processedTokens": 1124,
+    "finalContextTokens": 794
+  },
+  {
+    "arm": "baseline",
+    "n": 2,
+    "boundaryCalls": 8,
+    "transcriptBytes": 103131,
+    "hiddenBytes": 0,
+    "wallMs": 10473,
+    "processedTokens": 128122,
+    "finalContextTokens": 26079
+  },
+  {
+    "arm": "mdcp",
+    "n": 2,
+    "boundaryCalls": 1,
+    "transcriptBytes": 2221,
+    "wallMs": 10159,
+    "processedTokens": 1215,
+    "finalContextTokens": 885
+  },
+  {
+    "arm": "baseline",
+    "n": 3,
+    "boundaryCalls": 12,
+    "transcriptBytes": 142354,
+    "hiddenBytes": 0,
+    "wallMs": 11783,
+    "processedTokens": 256904,
+    "finalContextTokens": 35886
+  },
+  {
+    "arm": "mdcp",
+    "n": 3,
+    "boundaryCalls": 1,
+    "transcriptBytes": 2585,
+    "wallMs": 13237,
+    "processedTokens": 1306,
+    "finalContextTokens": 976
+  },
+  {
+    "arm": "baseline",
+    "n": 4,
+    "boundaryCalls": 16,
+    "transcriptBytes": 201898,
+    "hiddenBytes": 0,
+    "wallMs": 17482,
+    "processedTokens": 440139,
+    "finalContextTokens": 50772
+  },
+  {
+    "arm": "mdcp",
+    "n": 4,
+    "boundaryCalls": 1,
+    "transcriptBytes": 2946,
+    "wallMs": 20849,
+    "processedTokens": 1397,
+    "finalContextTokens": 1067
+  },
+  {
+    "arm": "baseline",
+    "n": 6,
+    "boundaryCalls": 24,
+    "transcriptBytes": 244934,
+    "hiddenBytes": 0,
+    "wallMs": 16545,
+    "processedTokens": 900382,
+    "finalContextTokens": 61531
+  },
+  {
+    "arm": "mdcp",
+    "n": 6,
+    "boundaryCalls": 1,
+    "transcriptBytes": 3217,
+    "wallMs": 18282,
+    "processedTokens": 1464,
+    "finalContextTokens": 1134
+  },
+  {
+    "arm": "baseline",
+    "n": 8,
+    "boundaryCalls": 32,
+    "transcriptBytes": 286254,
+    "hiddenBytes": 0,
+    "wallMs": 20322,
+    "processedTokens": 1444429,
+    "finalContextTokens": 71861
+  },
+  {
+    "arm": "mdcp",
+    "n": 8,
+    "boundaryCalls": 1,
+    "transcriptBytes": 3488,
+    "wallMs": 20130,
+    "processedTokens": 1532,
+    "finalContextTokens": 1202
+  },
+  {
+    "arm": "baseline",
+    "n": 10,
+    "boundaryCalls": 40,
+    "transcriptBytes": 389772,
+    "hiddenBytes": 0,
+    "wallMs": 19973,
+    "processedTokens": 2130001,
+    "finalContextTokens": 97742
+  },
+  {
+    "arm": "mdcp",
+    "n": 10,
+    "boundaryCalls": 1,
+    "transcriptBytes": 4241,
+    "wallMs": 22994,
+    "processedTokens": 1720,
+    "finalContextTokens": 1390
+  }
+]
