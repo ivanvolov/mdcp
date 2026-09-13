@@ -17,3 +17,4 @@ are a single decision across all folders here; see each TODO for its ask.
 | --- | --- | --- | --- |
 | `the-graph/` | The Graph | $15,000 / 3 tracks | ready to submit, needs video |
 | `uniswap/` | Uniswap Foundation | $5,000 / 1 open track | qualification complete, needs video |
+| `hedera/` | Hedera | $2,000 / Improve the Harness | qualification met, needs video; upstream PR would make it unambiguous |
