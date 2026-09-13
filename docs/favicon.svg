@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="mdcp">
+  <title>mdcp</title>
+  <style>
+    .plate{fill:#0A0A0A}
+    .ln{fill:#F5F5F5;opacity:.45}
+    .ar{stroke:#FF5A1F}
+    @media (prefers-color-scheme:dark){
+      .plate{fill:#F5F5F5}
+      .ln{fill:#0A0A0A;opacity:.38}
+      .ar{stroke:#F04E12}
+    }
+  </style>
+  <rect class="plate" width="32" height="32" rx="7.5"/>
+  <rect class="ln" x="8.3" y="7.6" width="12.4" height="2.8" rx="1.4"/>
+  <rect class="ln" x="8.3" y="13.2" width="8" height="2.8" rx="1.4"/>
+  <path class="ar" d="M9.7 20.4h11.8" fill="none" stroke-width="2.8" stroke-linecap="round"/>
+  <path class="ar" d="M19.2 16.4l4 4-4 4" fill="none" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
