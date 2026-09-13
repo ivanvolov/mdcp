@@ -104,15 +104,6 @@
   .verdict.bad{color:var(--warn)}
   .verdict .delta{color:var(--fg-3)}
 
-  .model{margin-top:30px; padding-top:18px; border-top:1px solid var(--line);
-    font-size:11.5px; line-height:1.65; color:var(--fg-3); font-family:var(--mono)}
-  /* Footnotes sit under BOTH lab columns. Flowing them in two text columns
-     keeps the measure readable at full width instead of one 150-character
-     ribbon, and mirrors the grid above so the rule reads as deliberate. */
-  .lab > .model{grid-column:1/-1; columns:2; column-gap:46px}
-  @media (max-width:880px){.lab > .model{columns:1}}
-  .model b{color:var(--fg-2); font-weight:500}
-  .model a{color:var(--fg-2)}
 
   /* protocol grid */
   .grid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
@@ -194,7 +185,7 @@
   .card code{font-family:var(--mono); font-size:.9em}
 
   /* prose + table */
-  .prose{max-width:640px; color:var(--fg-2)}
+  .prose{color:var(--fg-2)}
   .prose p{margin:0 0 16px}
   .prose strong{color:var(--fg); font-weight:600}
   .tscroll{overflow-x:auto; margin-top:40px}
@@ -321,17 +312,6 @@
         <div class="grid" id="grid"></div>
         <div class="notice" id="notice"></div>
       </div>
-
-      <!-- footnotes: span both columns, so they are not stranded in a narrow
-           ribbon beside whatever whitespace the shorter column leaves -->
-      <p class="model" id="model"></p>
-
-      <p class="model" style="border-top:0; padding-top:0; margin-top:2px">
-        <b>Measured, for contrast:</b> one server, four profiles — <b>76 capabilities behind 3 MCP
-        tools</b>. The always-loaded <code>execute</code> description is 12,966 B for all 76 and
-        2,600 B for Uniswap alone. Reproduce with <code>./mdcp surface &lt;profile&gt;</code>;
-        setup in <a href="https://github.com/ivanvolov/mdcp/blob/main/RUN.md">RUN.md</a>.
-      </p>
     </div>
 
     <!-- code panes -->
@@ -434,12 +414,31 @@
     </div>
 
     <div class="prose" style="margin-top:48px">
-      <p>One of these rounds mdcp loses, and it is on the page for the same reason the wins are:
-      <strong>Hedera's official skill is good</strong>. It is 11.5KB, accurate, and the official
-      agent got it right first try. When the baseline has no waste, a gateway that removes waste
-      saves nothing — and the approval gate costs a round-trip the official skill never pays.
-      That cost is fixed. The saving is per protocol. Which is exactly why it inverts the moment
-      anything composes.</p>
+      <p><strong>The gain is a function of the baseline's shape, not the protocol.</strong>
+      Hedera proves it twice, because it ships two official AI surfaces with opposite shapes and
+      we measured mdcp against both.</p>
+
+      <p>Against <a href="https://github.com/hedera-dev/hedera-skills">hedera-skills</a> —
+      the row in the table above — mdcp <strong>loses</strong>: 1.06× on tokens and 1.98× slower.
+      That skill is 11.5KB, accurate, and the official agent got it right first try. It also tells
+      the agent to write and run a Hiero SDK script, which is already code-mode. When the baseline
+      has no waste, a gateway that removes waste saves nothing, and the approval gate costs a
+      round-trip the skill never pays.</p>
+
+      <p>Against <a href="https://github.com/hedera-dev/mirrornode-mcp-server">mirrornode-mcp-server</a>
+      — the same protocol, the same week — mdcp posts the
+      <strong>largest margin in this repo</strong>: <strong>47,766 B → 434 B of payload into
+      context, 110× less</strong>, and 6 model round-trips → 1. That server generates one MCP tool
+      per mirror-node endpoint, 43 of them, so the agent pays a round-trip per call and carries
+      every raw response — holder lists, transaction records, base64 topic messages — through its
+      context. mdcp filters and aggregates all of it in the sandbox and returns the answer.
+      Deterministic run, both arms on Hedera's own unmodified tool definitions, live testnet:
+      <a href="https://github.com/ivanvolov/mdcp/blob/main/BENCHMARK.md">BENCHMARK.md §6</a>.</p>
+
+      <p>Two surfaces, one protocol, opposite results — which is the point. A code-mode gateway
+      is worth nothing against a baseline that already writes code, and worth 110× against one
+      that ships a tool per endpoint. Both rounds are on this page because the mechanism only
+      means something if the cases where it does not fire are visible too.</p>
     </div>
 
     <div class="tscroll">
@@ -691,7 +690,6 @@ function update(){
       $('r-'+k).textContent='—'; $('r-'+k).className='verdict';
     });
     $('instr-note').textContent = '';
-    $('model').textContent = 'Select a protocol to compare.';
   } else {
     const s = separate(on);
     // provenance rides on every figure. A single connected protocol is measured
@@ -707,16 +705,6 @@ function update(){
     // artifact-kind caveats, attached to the meter they qualify
     const notes = on.map(p=>p.surfaceNote).filter(Boolean);
     $('instr-note').innerHTML = notes.join(' ');
-
-    $('model').innerHTML = c.n === 1
-      ? 'One protocol, one task. These are the <b>measured</b> figures from BENCHMARK.md — no modelling. '+
-        'Add a second protocol to see how the two sides scale.'
-      : '<b>'+c.n+' protocols, one task, one agent.</b> MCP pays per protocol — a separate bundle to '+
-        'read and a separate executor to re-derive, so its costs sum. mdcp reads the calling convention '+
-        'once and adds each protocol as more lines in the same program behind the same approval. '+
-        'The second figure on each row is the payoff against running these same protocols as '+c.n+' '+
-        'separate agent tasks. Single-protocol values are measured; composition is modelled from the '+
-        'scaling data in <a href="https://github.com/ivanvolov/mdcp/blob/main/BENCHMARK.md">BENCHMARK.md §3-§5</a>.';
   }
 
   const off = on.filter(p=>!p.measured);
