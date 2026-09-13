@@ -13,6 +13,7 @@
 import { TOOL_BY_PATH, TOOLS, jsonSafe } from "../src/tools.js";
 import { execute, resume } from "../src/sandbox.js";
 import { bytesOf, logCall } from "../src/instrument.js";
+import { ensureGraphTools, closeGraphUpstream } from "../src/graphUpstream.js";
 
 const [, , command, payloadRaw] = process.argv;
 
@@ -23,6 +24,9 @@ function out(value: unknown) {
 }
 
 async function main() {
+  // Graph scenarios opt in; Uniswap scenarios never pay the upstream handshake.
+  if (process.env.GRAPH_UPSTREAM === "1") await ensureGraphTools();
+
   if (!command || command === "help") {
     out({
       usage: "cli.ts <tool-path|execute|resume> '<json>'",
@@ -103,7 +107,9 @@ async function main() {
   });
 }
 
-main().catch((error) => {
-  out({ error: String(error?.message ?? error) });
-  process.exitCode = 1;
-});
+main()
+  .catch((error) => {
+    out({ error: String(error?.message ?? error) });
+    process.exitCode = 1;
+  })
+  .finally(() => closeGraphUpstream());

@@ -15,6 +15,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { TOOLS, jsonSafe } from "./tools.js";
 import { bytesOf, logCall, logSurface } from "./instrument.js";
 
+if (process.env.GRAPH_UPSTREAM === "1") {
+  const { ensureGraphTools } = await import("./graphUpstream.js");
+  await ensureGraphTools();
+}
+
 const server = new McpServer({ name: "uniswap-baseline", version: "0.1.0" });
 
 let surfaceBytes = 0;

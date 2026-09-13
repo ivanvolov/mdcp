@@ -198,6 +198,19 @@ export const TOOLS: ToolDef[] = [
 
 export const TOOL_BY_PATH = new Map(TOOLS.map((t) => [t.path, t]));
 
+/**
+ * Late registration for tools discovered at runtime (MCP upstreams). The
+ * catalog stays one registry — both servers and the sandbox see the same set —
+ * it just grows after an upstream handshake.
+ */
+export function registerTools(defs: ToolDef[]) {
+  for (const def of defs) {
+    if (TOOL_BY_PATH.has(def.path)) continue;
+    TOOLS.push(def);
+    TOOL_BY_PATH.set(def.path, def);
+  }
+}
+
 /** JSON-safe: bigints never survive JSON.stringify otherwise. */
 export function jsonSafe(value: unknown): unknown {
   return JSON.parse(

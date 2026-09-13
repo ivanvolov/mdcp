@@ -13,6 +13,13 @@ import { z } from "zod";
 import { execute, resume, catalogSignatures } from "./sandbox.js";
 import { bytesOf, logSurface } from "./instrument.js";
 
+// Upstream tools must land in the catalog before the execute description is
+// built, so their signatures appear in the surface the model sees.
+if (process.env.GRAPH_UPSTREAM === "1") {
+  const { ensureGraphTools } = await import("./graphUpstream.js");
+  await ensureGraphTools();
+}
+
 const server = new McpServer({ name: "mdcp", version: "0.1.0" });
 
 const EXECUTE_DESCRIPTION = `Run a TypeScript program against the connected chain integrations.
