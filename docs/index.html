@@ -216,7 +216,7 @@
     <rect width="32" height="32" rx="7.5" fill="var(--fg)"/>
     <rect x="8.3" y="7.6" width="12.4" height="2.8" rx="1.4" fill="var(--bg)" opacity=".45"/>
     <rect x="8.3" y="13.2" width="8" height="2.8" rx="1.4" fill="var(--bg)" opacity=".45"/>
-    <path d="M9.7 20.4h9.5" fill="none" stroke="var(--mark-d)" stroke-width="2.8" stroke-linecap="round"/>
+    <path d="M9.7 20.4h11.8" fill="none" stroke="var(--mark-d)" stroke-width="2.8" stroke-linecap="round"/>
     <path d="M19.2 16.4l4 4-4 4" fill="none" stroke="var(--mark-d)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
   </symbol>
 </svg>
@@ -291,7 +291,7 @@
 
         <div class="meter">
           <h4>Agent tokens</h4>
-          <div class="hint">measured across the full agent run · lower is better</div>
+          <div class="hint">what the model pays to do the task · lower is better</div>
           <div class="row"><span class="who"><i></i>MCP</span>
             <span class="track"><span class="val" id="v-tok-a"></span><span class="bar"><span id="b-tok-a"></span></span></span></div>
           <div class="row mdcp"><span class="who"><i></i><span>M<span class="d">D</span>CP</span></span>
@@ -535,6 +535,19 @@ const P = [
           'executeQuery()','getDeploymentsBySubgraphId()','getTopSubgraphDeployments()',
           '<span class="c">// + filter top-50 pool rows in context</span>'] },
 
+  { id:'hedera', name:'Hedera', color:'#222226', mono:'H', caps:43, measured:true, on:false,
+    blurb:'mirror-node MCP, 43 tools',
+    scenario:'Operator portfolio + audit review, 6 endpoints',
+    surfaceNote:'Hedera’s official surface is a generated MCP catalog — 43 JSON Schemas the client holds before any work — not a skill file on disk.',
+    // Verbatim from app/bench/logs/mirror-sweep-result.json (deterministic run,
+    // live testnet). tok is payload into context at the repo's bytes/4 lens:
+    // 47,766 -> 434 B. sec is the run's own wall time, 392 -> 185 ms.
+    instr:[36968,7932], tok:[11942,109], sec:[0.392,0.185], cal:[6,1],
+    left:['getAccountById()  <span class="c">// 22,478 B of balances</span>','getTokensByAccountId()',
+          'getTokenById()','getTokenBalances()  <span class="c">// full holder list</span>',
+          'getTopicMessages()  <span class="c">// base64, decode in context</span>',
+          'getTransactions()','<span class="c">// + bucket and aggregate 47,766 B by hand</span>'] },
+
   { id:'1inch', name:'1inch', color:'#1B314F', mono:'1', caps:8, measured:false, on:false,
     blurb:'aggregation + fusion', scenario:'not connected',
     instr:[58400,3520], tok:[121400,43203], sec:[214,19.5], cal:[25,5],
@@ -593,7 +606,7 @@ const state = new Map(P.map(p => [p.id, p.on]));
 const $ = id => document.getElementById(id);
 const nf = n => Math.round(n).toLocaleString('en-US');
 const kb = b => b >= 1000 ? (b/1000).toFixed(b>=10000?0:1)+'k' : String(Math.round(b));
-const tk = n => (n/1000).toFixed(n>=100000?0:1)+'k';
+const tk = n => n < 1000 ? String(Math.round(n)) : (n/1000).toFixed(n>=100000?0:1)+'k';
 const secf = s => s >= 60 ? Math.floor(s/60)+'m '+Math.round(s%60)+'s' : (Math.round(s*10)/10)+'s';
 
 function compose(on){
@@ -689,7 +702,7 @@ function update(){
     setMeter('instr', c.instr[0], c.instr[1], b=>kb(b)+' B',     c.n, s.instr, prov);
     setMeter('tok',   c.tok[0],   c.tok[1],   tk,                c.n, s.tok,   prov);
     setMeter('sec',   c.sec[0],   c.sec[1],   secf,              c.n, s.sec,   prov);
-    setMeter('cal',   c.cal[0],   c.cal[1],   v=>nf(v)+' calls', c.n, s.cal,   prov);
+    setMeter('cal',   c.cal[0],   c.cal[1],   v=>nf(v)+(v===1?' call':' calls'), c.n, s.cal, prov);
 
     // artifact-kind caveats, attached to the meter they qualify
     const notes = on.map(p=>p.surfaceNote).filter(Boolean);
