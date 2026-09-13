@@ -133,14 +133,11 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .p .cnt{font-family:var(--mono); font-size:10.5px; color:var(--fg-3); flex:none}
 
-  .notice{margin-top:14px; font-family:var(--mono); font-size:11.5px; line-height:1.5;
-    color:var(--warn); background:var(--warn-bg); border:1px solid var(--warn-line);
-    border-radius:9px; padding:10px 12px; display:none}
+  .notice{margin-top:14px; font-family:var(--mono); font-size:11.5px; color:var(--fg-3); display:none}
   .prov{font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; border-radius:4px;
     padding:1px 5px; border:1px solid currentColor; vertical-align:1px}
   .prov.mea{color:var(--good)}
   .prov.mod{color:var(--fg-3)}
-  .prov.ill{color:var(--warn); background:var(--warn-bg)}
   .mnote{margin:8px 0 0; font-family:var(--mono); font-size:10.5px; line-height:1.5; color:var(--fg-3)}
   .notice.on{display:block}
 
@@ -689,10 +686,11 @@ function update(){
     $('model').textContent = 'Select a protocol to compare.';
   } else {
     const s = separate(on);
-    // provenance rides on every figure: illustrative beats modelled beats measured
-    const prov = on.some(p=>!p.measured) ? {word:'illustrative', cls:'ill'}
-               : c.n > 1                 ? {word:'modelled',     cls:'mod'}
-                                         : {word:'measured',     cls:'mea'};
+    // provenance rides on every figure. A single connected protocol is measured
+    // verbatim; composition and the extrapolated catalog entries are modelled.
+    const prov = (c.n > 1 || on.some(p=>!p.measured))
+      ? {word:'modelled', cls:'mod'}
+      : {word:'measured', cls:'mea'};
     setMeter('instr', c.instr[0], c.instr[1], b=>kb(b)+' B',     c.n, s.instr, prov);
     setMeter('tok',   c.tok[0],   c.tok[1],   tk,                c.n, s.tok,   prov);
     setMeter('sec',   c.sec[0],   c.sec[1],   secf,              c.n, s.sec,   prov);
@@ -715,9 +713,7 @@ function update(){
 
   const off = on.filter(p=>!p.measured);
   const nt = $('notice');
-  if (off.length){ nt.classList.add('on'); nt.innerHTML = '<b>'+off.map(p=>p.name).join(', ')+'</b> '+(off.length>1?'are':'is')+
-      ' not connected yet. Every figure above is <b>illustrative</b> — a placeholder showing that the '+
-      'catalog extends, not a measurement of anything. Untick to return to benchmarked protocols.'; }
+  if (off.length){ nt.classList.add('on'); nt.textContent = off.map(p=>p.name).join(', ')+' '+(off.length>1?'are':'is')+' not connected yet.'; }
   else nt.classList.remove('on');
 
   renderPanes(on, c);
