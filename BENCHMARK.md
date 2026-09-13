@@ -15,6 +15,34 @@ same route, same output — so the comparison is between equally-successful runs
 
 ## 1. Official skill vs. the same skill on mdcp
 
+### Level 2 (headline): both arms on the production Trading API
+
+The strongest comparison: both arms use Uniswap's real Trading API — the path
+`swap-integration` actually prescribes (`check_approval` -> `quote` -> permit
+signature -> `swap`) — with live routing and calldata, executed against fresh
+mainnet forks. Zero deviations from the skill's documented flow on either side.
+
+**DCA 50 USDC -> WETH via Trading API** (both landed CLASSIC swaps, both spent
+exactly 50 USDC):
+
+- agent tokens: official 114,967 -> mdcp 63,467 (**1.81x less**)
+- wall clock: 193s -> 65s (**3.0x faster**)
+- tool invocations: 23 -> 7
+
+The official arm's cost went *up* versus its on-chain round (114,967 vs 86,339
+tokens): the API path needs more of `swap-integration` read and debugged — it
+also hit the documented-vs-actual `routingPreference: CLASSIC` mismatch (the
+live API rejects the value the skill lists) and burned two failed script runs
+on it. The mdcp arm's cost stayed flat, because the API flow lives inside the
+gateway's `apiSwap` and none of that complexity reaches the agent.
+
+Harness note: our first mdcp run of this round failed deterministically — an
+earlier smoke test had consumed the fork's Permit2 nonce, while the API builds
+permits against live mainnet state. Fresh fork, same prompt: success. Recorded
+because level-2 benchmarking has exactly this contamination hazard.
+
+### Level 1: both arms on the on-chain path
+
 The official arm gets the verbatim files from `Uniswap/uniswap-ai@5338d6e`
 (copied under `skills/uniswap-official/`), full Bash, and viem — it works the
 way Claude Code actually works, including writing and running its own scripts.

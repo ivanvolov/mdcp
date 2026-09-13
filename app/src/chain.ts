@@ -15,29 +15,44 @@ import {
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { mainnet } from "viem/chains";
+import { mainnet, sepolia } from "viem/chains";
 
-export const RPC_URL = process.env.RPC_URL ?? "http://127.0.0.1:8545";
+/**
+ * Two profiles: "mainnet" (default — a local fork keeps chainId 1) and
+ * "sepolia" (the live public testnet, used for the demo transaction trail).
+ */
+const PROFILE = process.env.CHAIN_PROFILE === "sepolia" ? "sepolia" : "mainnet";
+
+export const CHAIN = PROFILE === "sepolia" ? sepolia : mainnet;
+export const CHAIN_ID = CHAIN.id;
+
+export const RPC_URL =
+  process.env.RPC_URL ??
+  (PROFILE === "sepolia"
+    ? process.env.SEPOLIA_RPC_URL!
+    : "http://127.0.0.1:8545");
 
 /** Anvil's well-known account #0. Public test key — never holds real funds. */
 const TEST_PK: Hex =
   (process.env.PRIVATE_KEY as Hex) ??
-  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+  (PROFILE === "sepolia"
+    ? (process.env.SEPOLIA_BURNER_PK as Hex)
+    : "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
 
 export const account = privateKeyToAccount(TEST_PK);
 
 export const publicClient = createPublicClient({
-  chain: mainnet,
+  chain: CHAIN,
   transport: http(RPC_URL),
 });
 
 export const walletClient = createWalletClient({
   account,
-  chain: mainnet,
+  chain: CHAIN,
   transport: http(RPC_URL),
 });
 
-export const ADDRESSES = {
+const MAINNET_ADDRESSES = {
   WETH: getAddress("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
   USDC: getAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"),
   WBTC: getAddress("0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"),
@@ -49,15 +64,23 @@ export const ADDRESSES = {
   SWAP_ROUTER_02: getAddress("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"),
 } as const;
 
+const SEPOLIA_ADDRESSES = {
+  WETH: getAddress("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"),
+  USDC: getAddress("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"),
+  V3_FACTORY: getAddress("0x0227628f3F023bb0B980b67D528571c95c6DaC1c"),
+  QUOTER_V2: getAddress("0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3"),
+  SWAP_ROUTER_02: getAddress("0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E"),
+} as const;
+
+export const ADDRESSES: Record<string, Address> =
+  PROFILE === "sepolia" ? { ...SEPOLIA_ADDRESSES } : { ...MAINNET_ADDRESSES };
+
 /** Symbol -> address, so agents can pass human names. */
-export const TOKENS: Record<string, Address> = {
-  WETH: ADDRESSES.WETH,
-  USDC: ADDRESSES.USDC,
-  WBTC: ADDRESSES.WBTC,
-  DAI: ADDRESSES.DAI,
-  LINK: ADDRESSES.LINK,
-  UNI: ADDRESSES.UNI,
-};
+export const TOKENS: Record<string, Address> = Object.fromEntries(
+  Object.entries(ADDRESSES).filter(([k]) =>
+    ["WETH", "USDC", "WBTC", "DAI", "LINK", "UNI"].includes(k),
+  ),
+);
 
 export function resolveToken(symbolOrAddress: string): Address {
   const upper = symbolOrAddress.toUpperCase();

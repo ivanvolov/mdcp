@@ -11,7 +11,7 @@
  * record the raw size so the benchmark can cite it.
  */
 import { getAddress, type Hex } from "viem";
-import { account, publicClient, walletClient, resolveToken } from "./chain.js";
+import { account, publicClient, walletClient, resolveToken, CHAIN_ID } from "./chain.js";
 
 const API = "https://trade-api.gateway.uniswap.org/v1";
 
@@ -55,8 +55,8 @@ export async function apiQuote(params: {
     swapper: account.address,
     tokenIn: resolveToken(params.tokenIn),
     tokenOut: resolveToken(params.tokenOut),
-    tokenInChainId: "1",
-    tokenOutChainId: "1",
+    tokenInChainId: String(CHAIN_ID),
+    tokenOutChainId: String(CHAIN_ID),
     amount: params.amountIn,
     type: "EXACT_INPUT",
     slippageTolerance: 0.5,
@@ -91,7 +91,7 @@ export async function apiSwap(params: {
     walletAddress: account.address,
     token: tokenIn,
     amount: params.amountIn,
-    chainId: 1,
+    chainId: CHAIN_ID,
   });
   absorbed += approvalRes.rawBytes;
   const approvalTx = approvalRes.data.approval;
@@ -110,8 +110,8 @@ export async function apiSwap(params: {
     swapper: account.address,
     tokenIn,
     tokenOut,
-    tokenInChainId: "1",
-    tokenOutChainId: "1",
+    tokenInChainId: String(CHAIN_ID),
+    tokenOutChainId: String(CHAIN_ID),
     amount: params.amountIn,
     type: "EXACT_INPUT",
     slippageTolerance: 0.5,

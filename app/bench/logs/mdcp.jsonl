@@ -1,0 +1,10 @@
+{"seq":0,"ts":1789290582784,"server":"mdcp","mcpTool":"execute","innerTool":"state.read","argsBytes":18,"resultBytes":4,"durationMs":0,"ok":true}
+{"seq":1,"ts":1789290582931,"server":"mdcp","mcpTool":"execute","innerTool":"wallet.balances","argsBytes":2,"resultBytes":174,"durationMs":146,"ok":true}
+{"seq":2,"ts":1789290582933,"server":"mdcp","mcpTool":"execute","argsBytes":946,"resultBytes":523,"durationMs":199,"ok":true,"boundary":true}
+{"seq":0,"ts":1789290590542,"server":"mdcp","mcpTool":"execute","innerTool":"state.read","argsBytes":18,"resultBytes":4,"durationMs":1,"ok":true}
+{"seq":1,"ts":1789290590576,"server":"mdcp","mcpTool":"execute","innerTool":"wallet.balances","argsBytes":2,"resultBytes":174,"durationMs":33,"ok":true}
+{"seq":2,"ts":1789290594624,"server":"mdcp","mcpTool":"execute","innerTool":"uniswap.apiSwap","argsBytes":58,"resultBytes":321,"durationMs":4047,"ok":true}
+{"seq":3,"ts":1789290594625,"server":"mdcp","mcpTool":"execute","innerTool":"state.write","argsBytes":134,"resultBytes":16,"durationMs":1,"ok":true}
+{"seq":4,"ts":1789290594626,"server":"mdcp","mcpTool":"resume","argsBytes":41,"resultBytes":403,"durationMs":4129,"ok":true,"boundary":true}
+{"seq":0,"ts":1789290604252,"server":"mdcp","mcpTool":"execute","innerTool":"state.read","argsBytes":18,"resultBytes":108,"durationMs":1,"ok":true}
+{"seq":1,"ts":1789290604254,"server":"mdcp","mcpTool":"execute","argsBytes":69,"resultBytes":143,"durationMs":50,"ok":true,"boundary":true}
