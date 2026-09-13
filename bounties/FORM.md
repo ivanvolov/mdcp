@@ -159,9 +159,7 @@ agents had to catch a ~41-day-stale snapshot by hand before ranking on it.
 
 **Why you're applicable:**
 
-We built a new MCP standard for DeFi — one `execute` tool, the agent's program
-runs in a sandbox next to the chain — and ran Uniswap's own `uniswap-ai` skills
-on it, changing only the delegation target (12 lines of 126 in `dca-bot`). Same
+We built a new MCP standard for DeFi to save tokens and time for developers and users — and ran Uniswap's own `uniswap-ai` skills on it, changing only the delegation target (12 lines of 126 in `dca-bot`). Same
 task, same Trading API, fresh agent each side:
 
 - index-bot, 3-leg basket: **180k → 64k tokens (2.81x), 738s → 67s (11.0x)**
