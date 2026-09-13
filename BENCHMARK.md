@@ -122,6 +122,40 @@ server-side in one call. We keep the logs (`app/bench/logs/s3-venue/`) because
 the sandbox-side filtering is still illustrative, but it is not a fair
 comparison against the official skill and we do not cite it as one.
 
+## 3. The Graph: official Subgraph MCP vs the same server behind execute()
+
+The cleanest-controlled experiment in this repo: **both arms use The Graph's
+own `subgraph-mcp` server, unmodified** (graphops, Apache-2.0, built from
+source), serving every query live from the Graph gateway. The baseline agent
+calls its 9 tools the conventional way — one round-trip per call. The mdcp
+agent reaches the *same server* through one `execute()` program; mdcp connects
+to it as an MCP client and re-exposes its tools inside the sandbox
+(`app/src/graphUpstream.ts`). Nothing of The Graph's is forked or
+reimplemented — the only variable is interaction shape.
+
+Task: WETH/USDC venue comparison across Uniswap V3, SushiSwap and Curve via
+their Messari standardized subgraphs — live discovery of subgraph IDs, latest
+financials, top WETH∩USDC pool per protocol, ranking. Both arms: Claude
+Sonnet, empty context, identical prompt, run in parallel. Both produced
+substantively identical answers (same subgraphs, same pools, same ranking) —
+and both independently flagged the corrupted protocol-level TVL figures.
+
+- agent tokens: baseline 73,240 → mdcp 63,169 (**1.16x less**)
+- wall clock: 193s → 119s (**1.6x faster**)
+- tool invocations: 19 → 3
+- tool payload through the transcript: 162,069 bytes → 10,329 bytes
+  (**15.7x less**); 39,611 bytes of searches, retries and pool lists ran
+  inside the sandbox and never reached the model
+
+Where the baseline's context went: three GraphQL schema fetches were 112,810
+bytes — **70% of its transcript payload is SDL** read once and mostly unused —
+plus ~13 KB of raw top-50 pool rows per protocol filtered in-context, plus
+three empty searches paid at full round-trip price. The mdcp program skipped
+schema fetches entirely (the standardized Messari schema is the point of
+standardization), probed unhealthy subgraphs and filtered pools in code, and
+returned only the aggregates. Full logs, both verbatim agent answers, and the
+detailed write-up: `app/bench/logs/s5-graph/`.
+
 ## Three bugs the benchmark caught in our own design
 
 1. Intent hashes over volatile fields (slippage bounds) made a resumed run
