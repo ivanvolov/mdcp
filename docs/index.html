@@ -106,6 +106,11 @@
 
   .model{margin-top:30px; padding-top:18px; border-top:1px solid var(--line);
     font-size:11.5px; line-height:1.65; color:var(--fg-3); font-family:var(--mono)}
+  /* Footnotes sit under BOTH lab columns. Flowing them in two text columns
+     keeps the measure readable at full width instead of one 150-character
+     ribbon, and mirrors the grid above so the rule reads as deliberate. */
+  .lab > .model{grid-column:1/-1; columns:2; column-gap:46px}
+  @media (max-width:880px){.lab > .model{columns:1}}
   .model b{color:var(--fg-2); font-weight:500}
   .model a{color:var(--fg-2)}
 
@@ -309,14 +314,6 @@
           <div class="verdict" id="r-cal"></div>
         </div>
 
-        <p class="model" id="model"></p>
-
-        <p class="model" style="border-top:0; padding-top:0; margin-top:14px">
-          <b>Measured, for contrast:</b> one server, four profiles — <b>76 capabilities behind 3 MCP
-          tools</b>. The always-loaded <code>execute</code> description is 12,966 B for all 76 and
-          2,600 B for Uniswap alone. Reproduce with <code>./mdcp surface &lt;profile&gt;</code>;
-          setup in <a href="https://github.com/ivanvolov/mdcp/blob/main/RUN.md">RUN.md</a>.
-        </p>
       </div>
 
       <!-- protocol grid -->
@@ -324,6 +321,17 @@
         <div class="grid" id="grid"></div>
         <div class="notice" id="notice"></div>
       </div>
+
+      <!-- footnotes: span both columns, so they are not stranded in a narrow
+           ribbon beside whatever whitespace the shorter column leaves -->
+      <p class="model" id="model"></p>
+
+      <p class="model" style="border-top:0; padding-top:0; margin-top:2px">
+        <b>Measured, for contrast:</b> one server, four profiles — <b>76 capabilities behind 3 MCP
+        tools</b>. The always-loaded <code>execute</code> description is 12,966 B for all 76 and
+        2,600 B for Uniswap alone. Reproduce with <code>./mdcp surface &lt;profile&gt;</code>;
+        setup in <a href="https://github.com/ivanvolov/mdcp/blob/main/RUN.md">RUN.md</a>.
+      </p>
     </div>
 
     <!-- code panes -->
