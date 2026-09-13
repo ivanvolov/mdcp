@@ -16,6 +16,13 @@ What the execution layer costs in instructions:
 - official: swap-integration (62,499) + viem-integration (7,618) = 70,117 bytes
 - mdcp:     mdcp-execute = 4,219 bytes   (16.6x smaller)
 
+Those are the SKILL.md files themselves — the instructions an agent loads
+before it can execute anything. Both official skills also link reference files
+that are read on demand rather than preloaded (`swap-integration/references/`
+11,103 bytes, `viem-integration/references/` 68,000 bytes); they are vendored
+here for completeness and are deliberately **not** counted in the 70,117,
+because counting them would overstate the always-loaded cost.
+
 The strategy skill itself is the same size in both. The saving is entirely in
 what an agent must carry to *execute*, not in the strategy prompt — which is the
 point: mdcp replaces the execution layer, not the skill.
