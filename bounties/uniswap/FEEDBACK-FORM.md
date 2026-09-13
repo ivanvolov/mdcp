@@ -85,14 +85,9 @@ one-line doc fix would have prevented.
 ### What did you build? *(required)*
 
 ```
-An MCP gateway ("mdcp") that runs Uniswap strategies as sandboxed programs
-instead of one tool call per step, integrating the Trading API as its execution
-path (check_approval → quote → swap, signed and broadcast host-side with a
-standing Permit2 allowance) alongside QuoterV2, SwapRouter02 and v3 pool reads.
-We then took your uniswap-ai skills verbatim, ported them to the gateway by
-changing only the delegation target — 12 lines of 126 in dca-bot — and
-benchmarked the two head to head on live Sepolia: 1.42x fewer tokens and 2.3x
-faster, write-up at https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md
+An MCP standard for DeFi that makes Uniswap's own skills about 2x cheaper on
+tokens and 2-11x faster, depending on the task. Benchmarked their skills against
+the same skills ported to it: https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md
 ```
 
 ### What was the biggest blocker you faced?

@@ -43,11 +43,9 @@ https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md
 
 > What were you building?
 
-An MCP gateway ("mdcp") that runs Uniswap strategies as sandboxed programs
-instead of one tool call per step, integrating the Trading API as its execution
-path alongside QuoterV2, SwapRouter02 and v3 pool reads. We then ported your
-own uniswap-ai skills onto it by changing only the delegation target — 12 lines
-of 126 — and benchmarked the two head to head on live Sepolia.
+An MCP standard for DeFi that makes Uniswap's own skills about 2x cheaper on
+tokens and 2-11x faster, depending on the task. Benchmarked their skills against
+the same skills ported to it: https://github.com/ivanvolov/mdcp/blob/main/FEEDBACK.md
 
 > What worked well?
 
