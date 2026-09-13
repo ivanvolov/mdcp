@@ -1,114 +1,124 @@
 # Feedback for the Uniswap Foundation
 
-Submitted as part of **mdcp** (ETHOnline 2026, Classic / From Scratch).
-Repo: https://github.com/ivanvolov/mdcp
+From building **mdcp** (ETHOnline 2026): an MCP gateway that runs Uniswap
+strategies as sandboxed programs. We read the full `uniswap-ai` suite, ported
+`dca-bot` onto our execution layer (12 lines changed of 126), and benchmarked
+the official skill against the port on identical tasks — including one round
+where both sides used the production Trading API end to end. Every claim below
+was verified against the live API or the shipped packages; things that did not
+survive verification are listed at the bottom rather than deleted.
 
-We built an MCP gateway that lets an AI agent drive Uniswap by writing one
-sandboxed program instead of making a dozen separate tool calls. Along the way
-we read the whole `Uniswap/uniswap-ai` plugin suite closely and integrated
-against the v3 Quoter and SwapRouter02. This is what we found.
+## The core gap: the Trading API has no hands
 
-## What worked well
+**There is no official executor.** Verified three ways:
 
-**The `uniswap-trading-tools` execution model is the best-specified agent-safety
-document we have seen from a protocol.** `references/execution-model.md` gets the
-hard part right: `confirm` vs `autonomous` modes, and the rule that autonomous
-requires all four of a per-run spend cap, a per-period spend cap, a token
-allowlist, a dry-run, and a kill switch. The insistence that strategy skills
-never build their own quote/approval/signing logic — that they delegate to
-`swap-integration` — is exactly the layering we ended up enforcing in code.
+- The [SDK overview](https://developers.uniswap.org/docs/sdks/overview) states
+  the SDKs compute and encode but "do not execute trades or send transactions" —
+  the application owns signer, broadcast, approvals.
+- `@uniswap/client-trading` (npm, v0.9.0) turns out to be auto-generated
+  protobuf/Connect types for the API — zero dependencies, no signing, no
+  broadcast. And **neither the skills nor the docs ever mention it**; we found
+  it by searching npm by hand.
+- The `swap-integration` skill's answer to execution is: have the agent write
+  the executor itself. In our benchmarks the agent following the skill wrote a
+  fresh ~10KB viem script *every session* — client setup, permit handling,
+  approval sequencing, broadcast, receipts — before the first trade.
 
-**The three strategy skills are well-chosen.** DCA, index, and copy-trade cover
-the shapes most agent trading actually takes, and keeping them as thin layers
-over one execution path means a fix in `swap-integration` improves all three.
+Everything between "API response" and "confirmed transaction" is DIY, and it is
+exactly the part where money is lost. This is what mdcp packages: an executor
+with an approval gate, transaction-intent idempotency, and keys that never
+enter the strategy's execution context. We would much rather this existed
+upstream. Until it does, every agent integration re-invents it, differently,
+with the private key in scope.
 
-**The idempotency guidance is real engineering, not boilerplate.** The
-period-key invariant in `strategy-state.md` (derive the key from the cadence,
-never assume the UTC day) is precisely the bug someone ships on day one.
+Concrete consequences we hit, each worth fixing on its own:
 
-**`x-agent-info` with an explicit `decision_origin`** is a good idea we had not
-seen elsewhere: the protocol gets to distinguish human-approved from autonomous
-flow at the traffic level. We send it with `integration_name: "mdcp"`.
+1. **Permit2 signing is documented for humans, not for the artifact agents
+   read.** The skill (62KB) specifies the request-shape rules — signature and
+   permitData both-or-neither, strip nulls, UniswapX exclusion — in detail, but
+   contains **zero** occurrences of `signTypedData`: the actual act of producing
+   the signature is absent. The web docs show a one-line ethers
+   `_signTypedData(...)` and note the response "does not return every field
+   some libraries expect" — precisely the friction we hit with viem, which
+   needs a `primaryType` the response never names. One code block in the skill
+   (ethers *and* viem) would have saved both our gateway and the benchmarked
+   agent real debugging time.
+2. **No replay protection anywhere in the path.** The API is stateless by
+   design; the deadline is the only bound. Re-broadcasting the same built swap,
+   or re-running a strategy whose first attempt already landed, double-spends
+   silently. This is an executor-layer responsibility — but since no executor
+   exists, today it is nobody's. (Our intent ledger keys each transaction on
+   its economic fields plus occurrence index; we found and fixed two
+   double-spend bugs in our own design purely because the layer existed to
+   hold the invariant.)
+3. **`gasLimit` in the /swap response has an undocumented trust boundary.** It
+   is estimated against live-mainnet warm/cold state; against any other state —
+   forks, simulations, replays — it under-provisions and the transaction
+   reverts OutOfGas mid-swap. Nothing in the docs says when the number can be
+   trusted. A sentence would do.
+4. **`routingPreference: "CLASSIC"` is documented but rejected by the live API**
+   (`must be one of [BEST_PRICE, FASTEST]`). Independently rediscovered by the
+   benchmarked agent, which burned two failed runs on it before working around
+   via `protocols: ["V2","V3","V4"]`.
+5. **Request validation runs before authentication** — a missing key surfaces
+   as a body-validation 400 first, so newcomers debug schemas that were never
+   the problem.
+6. **The API key requires an interactive login** with no programmatic path —
+   the one manual step in an otherwise automatable flow, in a product suite
+   aimed at agents.
 
-## What was harder than it should have been
+## The skill-suite gaps we still stand behind
 
-**1. The skills' guidance about human approval assumes an interactive runtime.**
-`swap-integration` mandates `AskUserQuestion` before any gas-spending call, and
-the trading-tools skills repeat it. But the same docs describe the host agent's
-*scheduler* waking the skill on a cadence — a cron run has no one to ask. The
-runtime-compatibility note ("collect the same confirmations through natural
-language instead") does not resolve it: in a scheduled run there is no
-conversation at all. The approval gate needs to be a property of the execution
-layer, not a prompt instruction. This is the gap mdcp fills: a state-changing
-call *suspends* the program, returns an approval request with a stable intent
-hash, and resumes later — so the same code path works interactively and
-headlessly.
+- **The approval story assumes an interactive runtime.** `swap-integration`
+  mandates `AskUserQuestion` before any spend; the trading-tools skills are
+  designed to be woken by a scheduler — where no one can answer. The approval
+  gate needs to live in the execution layer (suspend/resume with a reviewable
+  transaction plan), not in prompt text. This is measurable, not rhetorical:
+  our port runs the same strategy headlessly with the gate *enforced*.
+- **Guardrails are prose.** Spend caps, allowlist, dry-run, kill switch — all
+  described as musts, none enforced by anything. A model that skims has the key
+  and no fence.
+- **Context cost is large and unpublished.** The dca-bot dependency closure is
+  105,122 chars (~26k tokens) before the first call. In our API-path benchmark
+  the official-skill agent spent 114,967 tokens and 193s on one DCA buy versus
+  63,467 and 65s for the identical strategy on a 4KB execution contract.
 
-**2. Nothing enforces the guardrails.** Spend caps, the allowlist, the kill
-switch and the dry-run are described as things the skill "must" do, but they
-live in markdown the model may or may not follow. We would love a
-`@uniswap/agent-guardrails` package — cap and allowlist checks as code that
-wraps the Trading API client — so the guarantee survives a model that skims.
+## What did not survive verification
 
-**3. The context cost of the skills is large and unmeasured.** Doing a single
-DCA buy the documented way pulls in `dca-bot` + `execution-model` +
-`strategy-state` + the target-chain template + `swap-integration` +
-`viem-integration`. We measured that dependency closure at **105,122 characters
-(~26k tokens)** before a single call is made, with `swap-integration/SKILL.md`
-alone at 62KB. No token or latency budget is published anywhere in the repo.
-For an agent that runs on a cadence across many positions, this is the dominant
-cost, and it is invisible today. A published per-skill token budget, and a
-"minimal" variant of `swap-integration` that covers just the Trading API path,
-would both help a lot.
+We checked our own complaints before sending them; these failed, and one of
+them is interesting anyway:
 
-**4. `routingPreference` docs vs. validation.** `swap-integration` lists
-`BEST_PRICE`, `FASTEST`, and `CLASSIC` as the accepted values for
-`routingPreference`, but the live API rejects `CLASSIC`:
-`{"errorCode":"RequestValidationError","detail":"\"routingPreference\" must be
-one of [BEST_PRICE, FASTEST]"}`. `CLASSIC` is a valid *routing type* in the
-response, which is probably the source of the confusion — but an agent
-following the skill verbatim gets a 400 on its first call.
-
-**5. Request validation runs before authentication.** Posting to `/v1/quote`
-without an `x-api-key` returns a body-validation 400 first, and only a 401 once
-the body is valid. A newcomer debugging their first request can spend a while
-fixing a schema that was never the problem. Authenticating first would make the
-actual error obvious.
-
-**6. Getting a key needs an interactive login, which agents cannot do.** For a
-repo whose entire purpose is agent-driven development, the Trading API key sits
-behind a Google/GitHub/email login with no programmatic path. A scoped
-testnet-only key issuable by CLI would remove the one manual step in an
-otherwise fully automatable flow.
-
-**7. The reference target-chain template is an unusual default.** Robinhood
-Chain is the only template shipped, and it brings RWA-specific baggage —
-transfer-restricted ERC-20s, equity market hours, token-level gating — into
-skills that are otherwise asset-agnostic. A plain Ethereum-Sepolia or Base
-template would be a gentler starting point, with Robinhood as the advanced case
-showing what a restrictive chain adds.
-
-## What we would like to see next
-
-- **Publish token/latency budgets per skill**, and treat context size as a
-  first-class cost of an agent integration.
-- **Ship the guardrails as enforced code**, not prompt text.
-- **A suspend/resume signing contract** in the execution model, so the same
-  strategy can run interactively and on a scheduler without changing shape.
-- **A `CLASSIC`-only quote path** for integrators who want deterministic AMM
-  behavior and cannot handle UniswapX order flow in a first version.
+- **"check_approval breaks on native ETH" — false.** The live API returns a
+  clean `{"approval": null}` for the zero address. We had written a client-side
+  guard on the assumption it would fail, and never needed it. (The behavior is
+  undocumented, which is why we assumed — but the API does the right thing.)
+- **"The /swap body shape is strict" — apparently false, which is its own
+  finding.** The skill warns emphatically not to wrap the quote
+  (`{quote: quoteResponse}` marked "Don't wrap!") — yet our gateway sent
+  exactly that wrapped shape on CLASSIC routes and the API accepted it and the
+  swaps executed. Either the API tolerates both shapes (then the skill's
+  warning is overstated) or one shape is deprecated (then say which). A
+  documented contract would remove the guesswork.
+- The permit-shape rules we initially thought undocumented **are in the skill**
+  (both-or-neither, null-stripping, routing-type differences). What is missing
+  is the signing itself — see point 1 above. We flag this split deliberately:
+  the rules being present but the signature act absent is exactly the kind of
+  gap that is invisible to the author and fatal to a first-time agent.
 
 ## Where our integration lives
 
-- `app/src/chain.ts` — viem clients, QuoterV2 quoting, SwapRouter02
-  `exactInputSingle`, exact-amount ERC-20 approvals.
-- `app/src/tools.ts` — the capability registry, including the side-effect class
-  (`view` / `local` / `chain`) that drives our policy gate.
-- `app/src/sandbox.ts` — the approval gate, suspend/resume, and the
-  transaction-intent ledger that makes a resumed run unable to double-spend.
-- `app/bench/` — the measurement harness comparing a per-tool agent loop against
-  the same work done as one sandboxed program.
+- `app/src/tradingApi.ts` — the executor: check_approval → quote → Permit2
+  EIP-712 signature → /swap → host-side sign & broadcast, with `x-agent-info`
+  attribution (`integration_name: "mdcp"`) on every request.
+- `app/src/sandbox.ts` — approval gate (plan once, approve once), intent
+  ledger, occurrence-indexed idempotency.
+- `skills/uniswap-official/` vs `skills/mdcp-port/` — the side-by-side port,
+  12 lines changed.
+- `BENCHMARK.md` — methodology, results, and the three bugs the benchmark
+  caught in our own design.
 
-Thanks for the uniswap-ai repo — it is a genuinely good piece of work, and most
-of the criticism above is only possible because the design is written down
-clearly enough to argue with.
+Sources: [SDK overview](https://developers.uniswap.org/docs/sdks/overview),
+[Swapping API integration guide](https://developers.uniswap.org/docs/trading/swapping-api/integration-guide),
+[Permit2 guide](https://api-docs.uniswap.org/guides/permit2),
+`@uniswap/client-trading@0.9.0` on npm, and the live
+`trade-api.gateway.uniswap.org/v1` responses recorded in `app/bench/logs/`.
