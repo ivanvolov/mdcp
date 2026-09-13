@@ -6,34 +6,31 @@ Plain text, already within the field limits. Copy each block verbatim.
 
 ## Short description (max 100 chars)
 
-One execute tool instead of 76 schemas: agents run DeFi programs in a sandbox next to the chain
+executor.sh for DeFi: agents run code next to the chain instead of tool calls through their context
 
-`95 characters.`
+`99 characters.`
 
-Alternates, same length class, if you prefer a different emphasis:
+Alternates:
 
-- `Code-mode MCP gateway for DeFi: agents write one program, it runs sandboxed next to the chain` (93)
-- `One execute tool, not 76 schemas. Uniswap, The Graph and Hedera in one sandboxed code-mode gateway` (98)
+- `The execution layer for DeFi agents: code runs next to the chain, only the answer reaches the model` (99)
+- `Tool calls are too slow and too expensive to trade on. mdcp runs the agent's code next to the chain` (99)
+- `Agents that trade can't afford tool calls. mdcp runs their code next to the chain. 11x faster.` (94)
 
 ---
 
 ## Description (min 280 chars)
 
-Agentic finance does not work yet, and the reason is boring: the plumbing is too expensive.
+Agentic finance breaks on cost, not on ideas. An agent that trades runs a loop forever, and every turn of that loop pays twice: tokens, because the whole transcript is re-read, and seconds, because every step is a round-trip through the model. Spot a move, spend seven seconds acting on it, and you do not have a trading agent.
 
-An agent that trades is not an agent that answers one question. It runs constantly — watching, re-quoting, rebalancing, reacting. Every one of those turns pays the same tax twice. It pays tokens, because every protocol hands the model tens of kilobytes of instructions and every tool result gets dragged through the transcript and re-read on the next turn. And it pays seconds, because every step is a round-trip through the model. A cost you pay once is a rounding error. A cost you pay on every loop compounds until the strategy is not worth running.
+executor.sh made the general argument: give a model one sandbox, not a hundred tools. mdcp is that argument built for DeFi, where the loop never stops and the payload is money.
 
-The time is what actually kills it. If you spot a move and it takes seven seconds of model round-trips to act on it, you do not have a trading agent. You have an expensive newsletter.
+The agent writes one small program. It runs in a sandbox sitting next to the chain, with Uniswap, The Graph and Hedera already mounted. The loop happens there. Quotes it rejected, pools it checked, balances it only needed for a comparison — none of it reaches the model. Only the answer does.
 
-executor.sh made this argument for software in general: do not hand a model a hundred tool schemas, hand it one sandbox and let it write code. mdcp is that idea built for DeFi, where it matters most — because here the loop never stops and the payload is money.
+Measured against each protocol's own official agent tooling: up to 2.8x fewer tokens, up to 11x faster, 15-25x less data crossing into context. Against Hedera's MCP server, 47,766 bytes became 434. The gap widens with the task — triple the work and our side stays flat while the conventional one triples.
 
-One execute tool instead of seventy-six schemas. The agent writes a small program; it runs in a sandbox sitting next to the chain, with Uniswap, The Graph and Hedera already mounted. The loop happens there. Quotes it rejected, pools it checked, balances it only needed for a comparison — none of that ever reaches the model. Only the answer does.
+And because the program is code, the safety is code. Keys never enter the sandbox. The whole strategy is planned before anything is signed, and the operator approves the plan once rather than leg by leg. "Ask the user first" written in a prompt is not a control, and money needs a guarantee the model cannot talk its way around.
 
-That changes the economics instead of trimming them. Measured against each protocol's own official agent tooling: up to 2.8x fewer tokens, up to 11x faster, and 15-25x less data crossing into context — against Hedera's MCP server, 47,766 bytes became 434. The gap widens with the task: triple the work and our side stays roughly flat while the conventional one triples.
-
-And because the program is code, the safety is code. Keys never enter the sandbox. A strategy is planned in full before anything is signed, and the operator approves the whole plan once rather than leg by leg. "Ask the user first" written in a prompt is not a control. Agentic finance needs its guarantees enforced somewhere the model cannot talk its way around.
-
-DeFi needs its own standard for how agents touch it. This is a proposal for what that should look like.
+DeFi needs a standard for how agents touch it. This is a proposal for what it should be.
 
 ---
 
