@@ -113,7 +113,43 @@ per-protocol skill bundles:
   equivalent answers, and both caught the same two data-quality traps unprompted.
   Skill: `skills/mdcp-graph/SKILL.md`. Evidence: `app/bench/logs/s5-graph/`,
   `s6-graph-sweep/` (charts), `s7-graph-scale10/`.
-- **Hedera** — HTS via the Hiero SDK on live testnet, mirror-node reads.
+- **Hedera** — the integration where we learned **when this approach does not
+  pay**, which turned out to be the most useful result in the repo.
+
+  Hedera ships two official AI surfaces with opposite shapes, and they
+  benchmark in opposite directions:
+
+  | official surface | shape | result |
+  | --- | --- | --- |
+  | [`hedera-skills`](https://github.com/hedera-dev/hedera-skills) | SKILL.md telling the agent to *write a Hiero SDK script* | **a wash** — 1.06x tokens, 2x slower |
+  | [`mirrornode-mcp-server`](https://github.com/hedera-dev/mirrornode-mcp-server) | 43 MCP tools, one per REST endpoint | **110x less payload**, 6 round-trips → 1 |
+
+  A skill that already tells the agent to write code *is already code-mode* —
+  a code-mode gateway has nothing left to remove, and we measured exactly that
+  twice, on one service and on two (BENCHMARK.md §4, §5). Against the per-tool
+  MCP server the shape wins outright (§6): the six-endpoint portfolio + audit
+  review ships **47,766 bytes into context conventionally, 434 through mdcp**,
+  with holder lists, raw transaction records and base64 topic messages
+  filtered, decoded and aggregated inside the sandbox.
+
+  What still helps on the skill side is what the *developer* reads and writes,
+  not what the agent spends: one catalog skill
+  (`skills/mdcp-port/hedera-catalog/SKILL.md`, 6.6KB, HTS **and** HCS) replaces
+  two official skills totalling 42,515 bytes, and the agent authored 25 lines
+  instead of 181. Plus guarantees the official path has no equivalent of: the
+  operator key never enters the sandbox, and every transaction pipeline is
+  planned and approved as one unit before anything is broadcast.
+
+  Two upstream defects found and reported while wiring this up, both
+  reproduced with the repo's own pinned dependencies: `mirrornode-mcp-server`
+  does not start from a clean clone (`zod/v3` subpath vs pinned `zod@3.24.2`),
+  and its SSE endpoint answers HTTP 500 on every connection — so the 43 tools
+  it defines are unreachable as shipped. We served its own definitions over
+  stdio instead (`app/bench/upstream/`), leaving its files untouched.
+
+  Live testnet trail: token
+  [0.0.10521642](https://hashscan.io/testnet/token/0.0.10521642), audit topic
+  [0.0.10521641](https://hashscan.io/testnet/topic/0.0.10521641).
 
 ## How it works
 
@@ -146,6 +182,19 @@ CHAIN_PROFILE=sepolia npx tsx bench/cli.ts execute \
 
 # as an MCP server (surface: execute / resume / skills)
 npx tsx src/mcp-mdcp.ts
+```
+
+Hedera (live testnet; HTS/HCS writes need a funded operator key, the
+mirror-node benchmark needs nothing because every tool is a GET):
+
+```bash
+# two-service pipeline: topic + token + mint + audit trail, one program
+bash bench/arm-hedera.sh execute @bench/programs/audit-trail.ts
+bash bench/arm-hedera.sh resume '{"executionId":"<id>","approve":true}'
+
+# the 110x mirror-node benchmark (§6) — see app/bench/upstream/README.md
+# for starting Hedera's own MCP server first
+npx tsx bench/mirror-sweep.ts
 ```
 
 `src/mcp-baseline.ts` exposes the *same* 21 capabilities as conventional

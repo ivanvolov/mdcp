@@ -53,6 +53,26 @@ no fork to run them on). `app/bench/arm-hedera.sh` is the arm (gated by
 topic, create and mint a token, write an audit event per step, read the trail
 back — run with `bash bench/arm-hedera.sh execute @bench/programs/audit-trail.ts`.
 
+### The other Hedera surface — where the shape actually wins
+
+Hedera ships a *second* official AI artifact with the opposite shape:
+[mirrornode-mcp-server](https://github.com/hedera-dev/mirrornode-mcp-server)
+auto-generates **43 MCP tools**, one per mirror-node GET endpoint. That is
+per-tool MCP — one round-trip per call — not a script-writing skill, and it is
+where a code-mode gateway has something to remove.
+
+mdcp wraps it unmodified (`app/src/hederaUpstream.ts`, a sibling of
+`graphUpstream.ts`, which is left untouched) and re-exposes its tools inside
+the sandbox as `mirror.*`. Measured on an operator portfolio + audit review
+across six endpoints (BENCHMARK.md §6, deterministic, zero HBAR):
+
+- payload into model context: **47,766 -> 434 bytes (110x)**, 6 round-trips -> 1
+- catalog surface: **36,968 -> 7,932 bytes (4.7x)**
+
+The two Hedera surfaces together are the cleanest statement of when this
+approach pays: against a skill that already tells the agent to write code,
+nothing; against a per-tool MCP server, 110x.
+
 ## The Graph
 
 Third surface, different shape: The Graph's official AI artifact is not a text

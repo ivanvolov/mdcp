@@ -1,0 +1,54 @@
+{
+  "task": "operator portfolio + audit review (6 mirror-node endpoints)",
+  "upstream": "hedera-dev/mirrornode-mcp-server (unmodified tool definitions), live testnet",
+  "toolsDiscovered": 43,
+  "perToolArm": {
+    "modelRoundTrips": 6,
+    "bytesIntoContext": 47766,
+    "wallMs": 392
+  },
+  "mdcpArm": {
+    "modelRoundTrips": 1,
+    "bytesIntoContext": 434,
+    "wallMs": 185,
+    "status": "ok"
+  },
+  "payloadRatio": 110.1,
+  "roundTripRatio": 6,
+  "bytesAbsorbedInSandbox": 47332,
+  "catalog": {
+    "perToolMcpBytes": 36968,
+    "mdcpSignatureBytes": 7932,
+    "ratio": 4.7
+  },
+  "result": {
+    "account": "0.0.10521296",
+    "hbar": "18.6423",
+    "tokensHeld": 5,
+    "token": {
+      "id": "0.0.10521642",
+      "symbol": "GG",
+      "supply": "100150000000000"
+    },
+    "holders": 1,
+    "topHolder": {
+      "account": "0.0.10521296",
+      "balance": 100150000000000,
+      "decimals": 8
+    },
+    "auditEvents": [
+      "token_created",
+      "minted",
+      "sealed"
+    ],
+    "recentTxByType": {
+      "CONSENSUSSUBMITMESSAGE": 5,
+      "TOKENMINT": 3,
+      "CONSENSUSCREATETOPIC": 3,
+      "TOKENCREATION": 4,
+      "CRYPTOTRANSFER": 4,
+      "CRYPTOCREATEACCOUNT": 3,
+      "TOKENASSOCIATE": 3
+    }
+  }
+}

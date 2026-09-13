@@ -15,6 +15,7 @@ import { TOOL_BY_PATH, TOOLS, jsonSafe } from "../src/tools.js";
 import { execute, resume } from "../src/sandbox.js";
 import { bytesOf, logCall } from "../src/instrument.js";
 import { ensureGraphTools, closeGraphUpstream } from "../src/graphUpstream.js";
+import { ensureMirrorTools, closeMirrorUpstream } from "../src/hederaUpstream.js";
 
 const [, , command, payloadRaw] = process.argv;
 
@@ -27,6 +28,7 @@ function out(value: unknown) {
 async function main() {
   // Graph scenarios opt in; Uniswap scenarios never pay the upstream handshake.
   if (process.env.GRAPH_UPSTREAM === "1") await ensureGraphTools();
+  if (process.env.MIRROR_UPSTREAM === "1") await ensureMirrorTools();
 
   if (!command || command === "help") {
     out({
@@ -123,4 +125,7 @@ main()
     out({ error: String(error?.message ?? error) });
     process.exitCode = 1;
   })
-  .finally(() => closeGraphUpstream());
+  .finally(async () => {
+    await closeGraphUpstream();
+    await closeMirrorUpstream();
+  });

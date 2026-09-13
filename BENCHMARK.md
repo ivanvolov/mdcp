@@ -424,6 +424,73 @@ reads and writes, not what the agent spends.** The ~2x wall-clock cost is real
 and is the price of the approval gate (`execute` -> review -> `resume` is a
 round-trip the official skill never pays, because it has no enforced gate).
 
+## 6. Hedera again — against its *other* official surface, where the shape wins
+
+§4 and §5 measured mdcp against `hedera-skills` and found a wash. That result
+stands, and the reason turned out to be specific: those SKILL.md files tell the
+agent to **write and run a Hiero SDK script**. That is already code-mode, so a
+code-mode gateway has nothing to remove.
+
+Hedera ships a second official AI surface with the opposite shape:
+[hedera-dev/mirrornode-mcp-server](https://github.com/hedera-dev/mirrornode-mcp-server)
+generates **one MCP tool per mirror-node GET endpoint** straight from the
+OpenAPI spec — 43 tools, one model round-trip per call, full JSON Schema
+catalog resident in context. That is the same shape as The Graph's
+subgraph-mcp, where the interaction-shape win is real. Benchmarking the wrong
+one of the two is what produced §4's wash.
+
+Both arms use Hedera's own tool definitions, unmodified, served live from
+testnet. Task: an operator portfolio + audit review — account state, tokens
+held, token metadata, holder list, consensus-topic audit trail, and recent
+transactions bucketed by type. Six endpoints, the kind of question the mirror
+node exists to answer.
+
+Deterministic (`app/bench/mirror-sweep.ts`) — no agents, so no model variance,
+and every tool is a GET so the whole benchmark costs zero HBAR:
+
+- **payload into model context: 47,766 bytes -> 434 bytes (110x less)**
+- model round-trips: 6 -> 1
+- 47,332 bytes absorbed in the sandbox — holder lists, raw transaction records,
+  and base64 topic messages that were filtered, decoded and aggregated in code
+- **catalog surface: 36,968 bytes -> 7,932 bytes (4.7x)** — what a client holds
+  just to *have* the tools, before any work: 43 JSON Schemas plus descriptions
+  versus one `execute` tool carrying compact TS signatures
+
+This is the largest payload ratio measured in this repo — larger than The
+Graph's 15.7x — because mirror-node responses are big by design (an account
+carries up to 1,000 token balances) and the useful answer is an aggregate.
+
+Note the catalog ratio, 4.7x, is far below executor.sh's 99.6%: 43 tools is
+still two orders of magnitude short of their 1,640. The payload ratio is where
+the win lives at this scale, and it comes from *where the filtering happens*,
+not from schema elision.
+
+### Two upstream defects found while wiring this up
+
+Both reproduced with the repo's own pinned dependencies, and both are worth a
+PR to the Hedera Harness track:
+
+1. **A clean clone does not start.** `fastmcp` pulls `zod-to-json-schema`,
+   which imports the `zod/v3` subpath; the repo pins `zod@3.24.2`, which
+   predates it. Pinning `zod-to-json-schema@3.24.1` gets past it.
+2. **Its SSE endpoint answers HTTP 500 "Error creating server"** on every
+   connection — so the 43 tools it defines are unreachable as shipped. We
+   therefore served the upstream's own `openApiZod.ts` definitions over stdio
+   (`stdioServer.mjs`, same GET-only conversion as their `mcpServer.js`);
+   upstream files were not modified. The tools, schemas and descriptions
+   measured above are theirs verbatim — only the transport is ours.
+
+### Caveats, honestly
+
+- **Deterministic, not agent-driven.** This isolates interaction shape; it does
+  not measure agent tokens or wall clock, so it is not comparable to §1's
+  end-to-end numbers. Timings shown in the raw result are host-side only.
+- The per-tool arm is the *faithful* cost of calling these tools one at a time,
+  which is what an MCP client does — but no agent ran, so nothing here says
+  what a model would have spent reasoning between calls.
+- Raw result: `app/bench/logs/mirror-sweep-result.json`. Reproduce with
+  `bash bench/arm-mirror.sh` (see the script header for starting the upstream).
+
 ## Five bugs the benchmark caught in our own design
 
 1. Intent hashes over volatile fields (slippage bounds) made a resumed run
