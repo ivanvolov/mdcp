@@ -6,15 +6,15 @@ Plain text, already within the field limits. Copy each block verbatim.
 
 ## Short description (max 100 chars)
 
-Code mode for DeFi: the agent writes one program, it runs next to the chain. 11x faster to execute.
+A new MCP standard for DeFi agents: up to 11x faster and a fraction of the tokens
 
-`99 characters.`
+`81 characters.`
 
 Alternates:
 
-- `Don't make a trading agent call tools one at a time. Let it write code that runs next to the chain.` (99)
-- `The agent writes code, we run it next to the chain. DeFi agents get 11x faster and 25x less context` (99)
-- `Agents shouldn't call tools to trade. They should write code that runs next to the chain. 11x faster` (100)
+- `A new MCP standard for DeFi agents — far more token-efficient, and far faster to execute` (87)
+- `A new MCP standard for DeFi — cheaper in tokens, faster in execution, safer with keys` (84)
+- `A faster, cheaper MCP standard for DeFi agents` (45)
 
 ---
 
